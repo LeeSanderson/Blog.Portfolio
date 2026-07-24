@@ -1,0 +1,108 @@
+name: Reusable - Frontend deploy
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: Name of the app being deployed, used for commit messages.
+        required: true
+        type: string
+      working-directory:
+        description: Path to the app's frontend root, e.g. apps/{app-name}/frontend.
+        required: true
+        type: string
+      target-path:
+        description: Folder to publish into inside the target repo, e.g. {app-name}.
+        required: true
+        type: string
+      build-output-dir:
+        description: Build output directory, relative to working-directory.
+        required: false
+        type: string
+        default: dist
+      install-command:
+        required: false
+        type: string
+        default: npm ci
+      build-command:
+        required: false
+        type: string
+        default: npm run build
+      setup-node:
+        description: Whether to set up Node.js before installing/building. Set to false for non-Node frameworks (e.g. Blazor WASM).
+        required: false
+        type: boolean
+        default: true
+      node-version:
+        required: false
+        type: string
+        default: "22"
+      target-repo:
+        description: The repo that serves the built static output.
+        required: false
+        type: string
+        default: leesanderson/leesanderson.github.io
+      target-branch:
+        required: false
+        type: string
+        default: main
+    secrets:
+      PAGES_DEPLOY_TOKEN:
+        description: PAT with push access to target-repo.
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout app repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        if: inputs.setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.working-directory }}
+        run: ${{ inputs.install-command }}
+
+      - name: Build
+        working-directory: ${{ inputs.working-directory }}
+        run: ${{ inputs.build-command }}
+
+      - name: Checkout target repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.target-repo }}
+          ref: ${{ inputs.target-branch }}
+          token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
+          path: __pages-target
+
+      - name: Publish build output
+        env:
+          SOURCE_DIR: ${{ inputs.working-directory }}/${{ inputs.build-output-dir }}
+          TARGET_DIR: __pages-target/${{ inputs.target-path }}
+        run: |
+          set -euo pipefail
+          rm -rf "$TARGET_DIR"
+          mkdir -p "$TARGET_DIR"
+          cp -r "$SOURCE_DIR/." "$TARGET_DIR/"
+
+      - name: Commit and push
+        working-directory: __pages-target
+        env:
+          TARGET_PATH: ${{ inputs.target-path }}
+          COMMIT_MESSAGE: "Deploy ${{ inputs.app-name }} from ${{ github.repository }}@${{ github.sha }}"
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$TARGET_PATH"
+          if git diff --cached --quiet; then
+            echo "No changes to deploy"
+            exit 0
+          fi
+          git commit -m "$COMMIT_MESSAGE"
+          git push

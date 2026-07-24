@@ -8,6 +8,7 @@ A monorepo hosting a growing portfolio of small example and demo projects for si
 - **shared/**: cross-app libraries (`shared/backend/`, `shared/frontend/{framework}/`)
 - **host/**: the composition-root Azure Functions project (`Blog.Portfolio.Host`) that discovers and exposes every app's backend endpoints
 - **aspire/**: the .NET Aspire AppHost used to run the whole suite locally
+- **infra/**: Bicep for the shared Azure Function App, provisioned and deployed via `azd` (see `infra/README.md`)
 
 ## Technologies
 

@@ -1,0 +1,23 @@
+name: "<app-name> frontend"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/<app-name>/frontend/**"
+      - ".github/workflows/<app-name>.yml"
+      - ".github/workflows/_reusable-frontend-deploy.yml"
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_reusable-frontend-deploy.yml
+    with:
+      app-name: <app-name>
+      working-directory: apps/<app-name>/frontend
+      target-path: <app-name>
+      # build-output-dir: dist        # override if the framework's build output lives elsewhere
+      # install-command: npm ci       # override for a different package manager
+      # build-command: npm run build  # override for a different build script
+      # setup-node: false             # set false for non-Node frameworks (e.g. Blazor WASM)
+    secrets:
+      PAGES_DEPLOY_TOKEN: ${{ secrets.PAGES_DEPLOY_TOKEN }}

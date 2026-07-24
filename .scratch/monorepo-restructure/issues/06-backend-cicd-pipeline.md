@@ -11,3 +11,7 @@
 - [ ] On green CI on `main`, the workflow deploys `host/` to the Azure Function App provisioned in 05, with no manual approval step
 - [ ] A failing test in any app's backend blocks the deploy
 - [ ] After a successful deploy, the live `/api/example/ping` endpoint responds as expected
+
+## Comments
+
+- Still blocked: ticket 05's Bicep is written but not yet provisioned (needs Lee to run `azd provision` — see `infra/README.md`). Pick this up once that Function App exists in Azure, since this workflow's deploy target and its "confirm the live endpoint" acceptance criterion both depend on it being real.
