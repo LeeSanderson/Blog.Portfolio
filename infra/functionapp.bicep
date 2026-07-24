@@ -83,8 +83,8 @@ resource functionApp 'Microsoft.Web/sites@2025-03-01' = {
         }
       }
       scaleAndConcurrency: {
-        maximumInstanceCount: 100
-        instanceMemoryMB: 2048
+        maximumInstanceCount: 20
+        instanceMemoryMB: 512
       }
       runtime: {
         name: 'dotnet-isolated'
