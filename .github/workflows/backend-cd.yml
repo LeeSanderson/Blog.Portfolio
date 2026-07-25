@@ -1,0 +1,88 @@
+name: Backend CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: "backend-ci.yml run ID to deploy the artifact from. Leave blank for the latest successful run on main."
+        required: false
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+
+concurrency:
+  group: backend-cd
+  cancel-in-progress: false
+
+env:
+  AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+  AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+  AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+  AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+  AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+
+jobs:
+  provision-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install azd
+        uses: Azure/setup-azd@v2
+
+      # Requires the one-time federated-credential setup described in infra/README.md (`azd pipeline config`).
+      - name: Log in to Azure (federated credentials)
+        run: |
+          set -euo pipefail
+          azd auth login \
+            --client-id "$AZURE_CLIENT_ID" \
+            --federated-credential-provider "github" \
+            --tenant-id "$AZURE_TENANT_ID"
+
+      - name: Resolve CI run to deploy
+        id: ci-run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI_RUN_ID: ${{ inputs.ci_run_id }}
+        run: |
+          set -euo pipefail
+          run_id="$CI_RUN_ID"
+          if [ -z "$run_id" ]; then
+            run_id=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow backend-ci.yml --branch main \
+              --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          fi
+          if [ -z "$run_id" ]; then
+            echo "No successful backend-ci.yml run found on main" >&2
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Download host artifact from CI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run download "${{ steps.ci-run.outputs.run_id }}" --repo "$GITHUB_REPOSITORY" \
+            --name host-publish --dir ./publish
+
+      - name: Provision infrastructure
+        run: azd provision --no-prompt
+
+      - name: Deploy host from CI artifact
+        run: azd deploy host --from-package ./publish/host.zip --no-prompt
+
+      - name: Smoke test /api/example/ping
+        run: |
+          set -euo pipefail
+          hostname=$(azd env get-values | grep '^AZURE_FUNCTION_HOSTNAME=' | cut -d= -f2- | tr -d '"')
+          for attempt in $(seq 1 10); do
+            if response=$(curl -sf "https://$hostname/api/example/ping"); then
+              break
+            fi
+            echo "Attempt $attempt failed, retrying in 10s..."
+            sleep 10
+          done
+          echo "$response" | grep -q '"message":"pong"' || { echo "Unexpected response: $response" >&2; exit 1; }

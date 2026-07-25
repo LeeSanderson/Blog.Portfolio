@@ -24,3 +24,36 @@ azd deploy       # publishes host/src/Blog.Portfolio.Host to the provisioned Fun
 `azd provision` is idempotent — re-running it against an existing environment reconciles in place rather than
 duplicating resources. `azd env list` / `azd env select` manage multiple environments (e.g. separate dev/prod)
 if you ever need one.
+
+## CI/CD
+
+Backend CI/CD is split into two workflows (ticket 06):
+
+- `.github/workflows/backend-ci.yml` — runs on every commit that touches backend code. Builds, runs the full
+  test suite, and publishes `host/` as the `host-publish` artifact.
+- `.github/workflows/backend-cd.yml` — manually triggered (`workflow_dispatch`) only, for now. Downloads the
+  `host-publish` artifact from the latest successful CI run on `main` (or a specific run via the `ci_run_id`
+  input), runs `azd provision` to reconcile infra, then `azd deploy host --from-package` to deploy that exact
+  artifact — no rebuild at deploy time. Finishes with a smoke test against the live `/api/example/ping`.
+
+### One-time setup: federated credentials for GitHub Actions
+
+`backend-cd.yml` authenticates to Azure via OIDC (no stored client secret). Run this once yourself, from a
+machine with `azd` installed and logged in:
+
+```powershell
+azd auth login
+azd pipeline config --provider github
+```
+
+This creates (or reuses) an Azure AD app registration with a federated credential trusting this repo's GitHub
+Actions, and sets these as **repository variables** (Settings → Secrets and variables → Actions → Variables) —
+none of them are secrets, since OIDC needs no client secret:
+
+- `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` — identify the federated app registration and
+  target subscription.
+- `AZURE_ENV_NAME`, `AZURE_LOCATION` — must match the `azd` environment you provisioned locally in the section
+  above, so CD reconciles the same resource group rather than creating a second one.
+
+If `azd pipeline config` sets any of these as **secrets** instead of variables, move them to repository
+variables — `backend-cd.yml` reads them via `vars.*`.

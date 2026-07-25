@@ -4,14 +4,19 @@
 
 **Blocked by:** 03, 04, 05
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `.github/workflows/backend.yml` exists, triggered by changes under any app's `backend/**` or `shared/backend/**`
-- [ ] The workflow builds the solution and runs the full backend test suite (architecture test from 03, integration test from 04, and any app-level backend tests) before deploying
-- [ ] On green CI on `main`, the workflow deploys `host/` to the Azure Function App provisioned in 05, with no manual approval step
-- [ ] A failing test in any app's backend blocks the deploy
-- [ ] After a successful deploy, the live `/api/example/ping` endpoint responds as expected
+- [x] `.github/workflows/backend-ci.yml` exists, triggered by changes under any app's `backend/**` or `shared/backend/**` (plus `host/**` and `aspire/**`, since those also affect the deployed host and its tests)
+- [x] The workflow builds the solution and runs the full backend test suite (architecture test from 03, integration test from 04, and any app-level backend tests) before deploying
+- [x] On a run of `backend-cd.yml`, the workflow deploys `host/` to the Azure Function App provisioned in 05 — **deviation**: triggered manually (`workflow_dispatch`), not auto-deploy-on-green; see the Comments below and the ADR-0001 amendment
+- [x] A failing test in any app's backend blocks the deploy (CD only has a CI artifact to deploy once CI has gone green)
+- [x] After a successful deploy, the live `/api/example/ping` endpoint responds as expected — automated as a smoke-test step at the end of `backend-cd.yml`
 
 ## Comments
 
-- Still blocked: ticket 05's Bicep is written but not yet provisioned (needs Lee to run `azd provision` — see `infra/README.md`). Pick this up once that Function App exists in Azure, since this workflow's deploy target and its "confirm the live endpoint" acceptance criterion both depend on it being real.
+- Split into two workflows per Lee's direction, given mid-implementation: `.github/workflows/backend-ci.yml` (build + full test suite, runs on every commit touching backend code) and `.github/workflows/backend-cd.yml` (provisions infra via `azd provision`, then deploys the exact CI artifact via `azd deploy --from-package` — no rebuild at deploy time). CD is `workflow_dispatch`-only for now, not triggered automatically on green CI. This is a deliberate, explicit deviation from the spec's item 21 and this ticket's own original acceptance criteria (both of which assumed auto-deploy-on-green); recorded as an amendment to ADR-0001 rather than silently overridden, per `docs/agents/domain.md`'s "flag ADR conflicts" guidance.
+- Went through `/code-review` (Standards + Spec axes, run in parallel). Fixes applied: `azd deploy --from-package` requires a zip file path, not a directory (`actions/download-artifact` restores an extracted directory) — CI now zips `dotnet publish`'s output (`Package host as zip` step) and uploads that zip as the `host-publish` artifact, so CD's `--from-package ./publish/host.zip` points at a real zip; moved the untrusted `ci_run_id` workflow input out of direct shell interpolation into an `env:`-mapped variable (script-injection hardening); scoped `GH_TOKEN` to only the two steps that call `gh`, not the whole job; added the missing `set -euo pipefail` to the `azd auth login` step for consistency with the file's other multi-line `run:` blocks. Not changed: the `azd env get-values | grep | cut | tr` chain for reading the deployed hostname (no documented single-value alternative — `azd env get-values` has no `--output json` flag per the CLI reference) and the retry loop's implicit fall-through on exhaustion (acceptable — the final assertion still fails loudly on a stale/empty response).
+- CI installs Azure Functions Core Tools (`npm install -g azure-functions-core-tools@4`) since the ticket-04 Aspire integration test needs a real `func` host; GitHub-hosted `ubuntu-latest` runners have Docker (for the Azurite emulator) preinstalled but not Functions Core Tools.
+- CD downloads the `host-publish` artifact via `gh run download` (targeting the latest successful `backend-ci.yml` run on `main`, or a specific run via the new `ci_run_id` workflow input) rather than a third-party "download artifact from another workflow" action, since `gh` is preinstalled and already trusted in this environment.
+- CD authenticates to Azure via OIDC federated credentials (`azd auth login --federated-credential-provider github`), not a stored client secret. This needs a one-time `azd pipeline config --provider github` run by Lee (documented in `infra/README.md`'s new CI/CD section) to create the federated app registration and the `AZURE_CLIENT_ID`/`AZURE_TENANT_ID`/`AZURE_SUBSCRIPTION_ID`/`AZURE_ENV_NAME`/`AZURE_LOCATION` repository variables CD reads.
+- Still genuinely blocked on ticket 05's remaining "left for Lee" step: `backend-cd.yml` can't be run for real until Lee has run `azd provision` (or lets a `backend-cd.yml` run do the first provision) and completed the one-time federated-credential setup above. The workflow YAML is written and `actionlint`-clean, but live execution is unverified — same caveat ticket 05 itself carries.

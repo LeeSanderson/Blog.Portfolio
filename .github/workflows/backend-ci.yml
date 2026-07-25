@@ -1,0 +1,55 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - "apps/*/backend/**"
+      - "shared/backend/**"
+      - "host/**"
+      - "aspire/**"
+      - "Blog.Portfolio.slnx"
+      - "Directory.Build.props"
+      - "Directory.Packages.props"
+      - ".github/workflows/backend-ci.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      # The Aspire integration test (ticket 04) starts a real Functions host via Azure Functions Core
+      # Tools, which GitHub-hosted runners don't preinstall.
+      - name: Install Azure Functions Core Tools
+        run: npm install -g azure-functions-core-tools@4 --unsafe-perm true
+
+      - name: Restore
+        run: dotnet restore Blog.Portfolio.slnx
+
+      - name: Build
+        run: dotnet build Blog.Portfolio.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test Blog.Portfolio.slnx --configuration Release --no-build
+
+      - name: Publish host
+        run: dotnet publish host/src/Blog.Portfolio.Host/Blog.Portfolio.Host.csproj --configuration Release --output ./publish/host
+
+      # azd deploy --from-package requires a zip file path, not a directory - zip it here so CD
+      # can deploy this exact artifact without rebuilding.
+      - name: Package host as zip
+        run: (cd ./publish/host && zip -r ../../host.zip .)
+
+      - name: Upload host artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: host-publish
+          path: ./host.zip
+          retention-days: 14
