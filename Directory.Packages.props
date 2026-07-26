@@ -4,7 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <GlobalPackageReference Include="Opinionated.DotNet.CodingStandards" Version="0.0.7" />
+    <GlobalPackageReference Include="Opinionated.DotNet.CodingStandards" Version="0.0.8" />
   </ItemGroup>
 
   <ItemGroup>
