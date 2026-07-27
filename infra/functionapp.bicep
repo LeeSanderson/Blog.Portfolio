@@ -1,5 +1,6 @@
 param location string
 param tags object
+param envName string
 param resourceToken string
 param storageAccountName string
 param deploymentContainerName string
@@ -18,7 +19,7 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing
 }
 
 resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
-  name: 'id-${resourceToken}'
+  name: 'id-${envName}'
   location: location
   tags: tags
 }
@@ -44,7 +45,7 @@ resource monitoringMetricsPublisherRoleAssignment 'Microsoft.Authorization/roleA
 }
 
 resource plan 'Microsoft.Web/serverfarms@2025-03-01' = {
-  name: 'plan-${resourceToken}'
+  name: take('plan-${envName}', 40)
   location: location
   tags: tags
   kind: 'functionapp'
@@ -58,7 +59,7 @@ resource plan 'Microsoft.Web/serverfarms@2025-03-01' = {
 }
 
 resource functionApp 'Microsoft.Web/sites@2025-03-01' = {
-  name: 'func-${resourceToken}'
+  name: 'func-${take(envName, 46)}-${resourceToken}'
   location: location
   tags: union(tags, { 'azd-service-name': 'host' })
   kind: 'functionapp,linux'

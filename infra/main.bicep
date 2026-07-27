@@ -9,7 +9,8 @@ param environmentName string
 @description('Primary location for all resources')
 param location string
 
-var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
+var envName = toLower(environmentName)
+var resourceToken = substring(toLower(uniqueString(subscription().id, environmentName, location)), 0, 8)
 var tags = {
   'azd-env-name': environmentName
 }
@@ -26,7 +27,7 @@ module monitoring 'appinsights.bicep' = {
   params: {
     location: location
     tags: tags
-    resourceToken: resourceToken
+    envName: envName
   }
 }
 
@@ -36,6 +37,7 @@ module storage 'storage.bicep' = {
   params: {
     location: location
     tags: tags
+    envName: envName
     resourceToken: resourceToken
   }
 }
@@ -46,6 +48,7 @@ module functionApp 'functionapp.bicep' = {
   params: {
     location: location
     tags: tags
+    envName: envName
     resourceToken: resourceToken
     storageAccountName: storage.outputs.name
     deploymentContainerName: storage.outputs.deploymentContainerName

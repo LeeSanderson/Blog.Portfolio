@@ -1,9 +1,9 @@
 param location string
 param tags object
-param resourceToken string
+param envName string
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
-  name: 'law-${resourceToken}'
+  name: take('law-${envName}', 63)
   location: location
   tags: tags
   properties: {
@@ -18,7 +18,7 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
 }
 
 resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
-  name: 'appi-${resourceToken}'
+  name: 'appi-${envName}'
   location: location
   tags: tags
   kind: 'web'

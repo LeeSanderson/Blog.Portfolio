@@ -11,6 +11,14 @@ Aspire AppHost model.
   `azd deploy` can find it), a user-assigned managed identity, and the role assignments it needs
   (Storage Blob Data Owner on the storage account, Monitoring Metrics Publisher on Application Insights).
 
+## Naming
+
+Resources scoped to the resource group (Log Analytics, Application Insights, the managed identity, the App
+Service plan) are named `{prefix}-{environmentName}` — no random suffix, since `rg-{environmentName}` already
+gives them a unique scope. The storage account and Function App need to be unique across *all* of Azure (the
+Function App's hostname is `*.azurewebsites.net`), so those two get a short hash (`resourceToken`, derived from
+the subscription, environment name, and location) appended to keep them collision-safe.
+
 ## Provisioning
 
 Run these yourself — they act on a real Azure subscription:

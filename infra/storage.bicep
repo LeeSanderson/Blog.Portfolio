@@ -1,11 +1,13 @@
 param location string
 param tags object
+param envName string
 param resourceToken string
 
 var deploymentContainerName = 'deploymentpackage'
+var sanitizedEnvName = replace(envName, '-', '')
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
-  name: 'st${resourceToken}'
+  name: 'st${take(sanitizedEnvName, 14)}${resourceToken}'
   location: location
   tags: tags
   kind: 'StorageV2'
