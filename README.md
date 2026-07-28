@@ -58,8 +58,8 @@ This solution uses:
 
 ## Testing
 
-No test projects exist yet — each app's backend carries its own under `apps/{app-name}/backend/tests/`, and `host/tests/` holds cross-app tests (e.g. the route-prefix architecture test). xUnit, FluentAssertions, and Moq are the established stack; coverlet reports coverage.
+Each app's backend carries its own tests under `apps/{app-name}/backend/tests/` (e.g. `Blog.Portfolio.Apps.Example.Backend.Tests`). Cross-app tests live under `host/tests/` (the route-prefix architecture test) and `aspire/Blog.Portfolio.AppHost.Tests/` (the end-to-end test that starts the real AppHost and calls an app's endpoint over HTTP). xUnit, FluentAssertions, and Moq are the established stack; coverlet reports coverage.
 
 ## API Endpoints
 
-None yet — the project has been stripped back to a bare Azure Functions boilerplate.
+- `GET /api/example/ping` — walking-skeleton endpoint from `apps/example/`, proving the REPR base class and route-prefix convention. See `apps/example/README.md`.
