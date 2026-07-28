@@ -73,6 +73,20 @@ should be checking for:
   hand-rolled `Endpoint<TRequest, TResponse>`-style base class in
   `shared/backend`, not a third-party REPR library. See
   `docs/adr/0005-hand-rolled-repr-base.md` for why.
+- **One endpoint per folder** — each endpoint gets its own subfolder under the
+  app's backend project, named after the feature (e.g. `Ping/`). That folder
+  holds the `[Function]`-attributed class plus its `Request`/`Response`
+  records — related types live together instead of being spread across the
+  project root. The function class implements `Endpoint<TRequest, TResponse>`
+  directly (its `[Function]` trigger method calls the class's own
+  `HandleAsync` override) rather than delegating to a separate endpoint
+  object, and holds exactly one `[Function]` method — one class, one endpoint.
+  Name the class `{Feature}Function` (e.g. `PingFunction`), not
+  `{Feature}Functions` — the singular reinforces the one-function-per-class
+  rule. Tests mirror the same subfolder structure (e.g.
+  `tests/.../Ping/PingFunctionTests.cs`). See
+  `apps/example/backend/src/Blog.Portfolio.Apps.Example.Backend/Ping/` for the
+  reference layout.
 
 Architectural decisions that shaped these conventions are recorded in
 `docs/adr/` — check there before proposing something an ADR already settled.
