@@ -9,6 +9,17 @@ param environmentName string
 @description('Primary location for all resources')
 param location string
 
+@secure()
+@description('Resend API key used to send subscriber emails')
+param resendApiKey string
+
+@secure()
+@description('Secret key used to HMAC-sign email-subscription confirm/unsubscribe links')
+param emailSubscriptionSigningKey string
+
+@description('The "from" address for subscriber emails; must be on a domain verified in Resend')
+param emailSubscriptionFromAddress string = 'updates@sixsideddice.com'
+
 var envName = toLower(environmentName)
 var resourceToken = substring(toLower(uniqueString(subscription().id, environmentName, location)), 0, 8)
 var tags = {
@@ -54,6 +65,9 @@ module functionApp 'functionapp.bicep' = {
     deploymentContainerName: storage.outputs.deploymentContainerName
     applicationInsightsName: monitoring.outputs.name
     applicationInsightsConnectionString: monitoring.outputs.connectionString
+    resendApiKey: resendApiKey
+    emailSubscriptionSigningKey: emailSubscriptionSigningKey
+    emailSubscriptionFromAddress: emailSubscriptionFromAddress
   }
 }
 

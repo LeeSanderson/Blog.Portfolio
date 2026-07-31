@@ -25,4 +25,8 @@
     <Project Path="apps/example/backend/src/Blog.Portfolio.Apps.Example.Backend/Blog.Portfolio.Apps.Example.Backend.csproj" />
     <Project Path="apps/example/backend/tests/Blog.Portfolio.Apps.Example.Backend.Tests/Blog.Portfolio.Apps.Example.Backend.Tests.csproj" />
   </Folder>
+  <Folder Name="/apps/email-subscription/backend/">
+    <Project Path="apps/email-subscription/backend/src/Blog.Portfolio.Apps.EmailSubscription.Backend/Blog.Portfolio.Apps.EmailSubscription.Backend.csproj" />
+    <Project Path="apps/email-subscription/backend/tests/Blog.Portfolio.Apps.EmailSubscription.Backend.Tests/Blog.Portfolio.Apps.EmailSubscription.Backend.Tests.csproj" />
+  </Folder>
 </Solution>

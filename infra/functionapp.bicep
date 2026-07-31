@@ -7,8 +7,21 @@ param deploymentContainerName string
 param applicationInsightsName string
 param applicationInsightsConnectionString string
 
+@secure()
+param resendApiKey string
+@secure()
+param emailSubscriptionSigningKey string
+param emailSubscriptionFromAddress string
+
 var storageBlobDataOwnerRoleId = 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
+var storageTableDataContributorRoleId = '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3'
+var storageQueueDataContributorRoleId = '974c5e8b-45b9-4653-ba55-5f855dd0fb88'
 var monitoringMetricsPublisherRoleId = '3913510d-42f4-4e42-8a64-420c390055eb'
+var allowedBlogOrigins = [
+  'https://www.sixsideddice.com'
+  'https://sixsideddice.com'
+  'http://localhost:4000'
+]
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
   name: storageAccountName
@@ -31,6 +44,26 @@ resource storageBlobDataOwnerRoleAssignment 'Microsoft.Authorization/roleAssignm
     principalId: identity.properties.principalId
     principalType: 'ServicePrincipal'
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataOwnerRoleId)
+  }
+}
+
+resource storageTableDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, identity.id, storageTableDataContributorRoleId)
+  scope: storageAccount
+  properties: {
+    principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageTableDataContributorRoleId)
+  }
+}
+
+resource storageQueueDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, identity.id, storageQueueDataContributorRoleId)
+  scope: storageAccount
+  properties: {
+    principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageQueueDataContributorRoleId)
   }
 }
 
@@ -107,6 +140,14 @@ resource functionApp 'Microsoft.Web/sites@2025-03-01' = {
           value: storageAccount.properties.primaryEndpoints.blob
         }
         {
+          name: 'AzureWebJobsStorage__tableServiceUri'
+          value: storageAccount.properties.primaryEndpoints.table
+        }
+        {
+          name: 'AzureWebJobsStorage__queueServiceUri'
+          value: storageAccount.properties.primaryEndpoints.queue
+        }
+        {
           name: 'AZURE_CLIENT_ID'
           value: identity.properties.clientId
         }
@@ -118,11 +159,28 @@ resource functionApp 'Microsoft.Web/sites@2025-03-01' = {
           name: 'APPLICATIONINSIGHTS_AUTHENTICATION_STRING'
           value: 'ClientId=${identity.properties.clientId};Authorization=AAD'
         }
+        {
+          name: 'RESEND_API_KEY'
+          value: resendApiKey
+        }
+        {
+          name: 'EMAIL_SUBSCRIPTION_SIGNING_KEY'
+          value: emailSubscriptionSigningKey
+        }
+        {
+          name: 'EMAIL_SUBSCRIPTION_FROM_ADDRESS'
+          value: emailSubscriptionFromAddress
+        }
       ]
+      cors: {
+        allowedOrigins: allowedBlogOrigins
+      }
     }
   }
   dependsOn: [
     storageBlobDataOwnerRoleAssignment
+    storageTableDataContributorRoleAssignment
+    storageQueueDataContributorRoleAssignment
     monitoringMetricsPublisherRoleAssignment
   ]
 }

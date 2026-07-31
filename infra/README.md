@@ -6,10 +6,24 @@ Aspire AppHost model.
 
 - `main.bicep` — subscription-scoped entry point: creates the resource group, wires up the modules below.
 - `appinsights.bicep` — Log Analytics workspace + Application Insights.
-- `storage.bicep` — the storage account backing `AzureWebJobsStorage` and the Flex Consumption deployment container.
+- `storage.bicep` — the storage account backing `AzureWebJobsStorage`, the Flex Consumption deployment
+  container, and the `email-subscription` app's `Subscribers` table and `send-email` queue (see
+  `docs/adr/0006-email-subscription-table-and-queue-storage.md`).
 - `functionapp.bicep` — the Flex Consumption plan, the Function App itself (tagged `azd-service-name: host` so
-  `azd deploy` can find it), a user-assigned managed identity, and the role assignments it needs
-  (Storage Blob Data Owner on the storage account, Monitoring Metrics Publisher on Application Insights).
+  `azd deploy` can find it), a user-assigned managed identity, the role assignments it needs (Storage Blob Data
+  Owner, Storage Table Data Contributor, and Storage Queue Data Contributor on the storage account, Monitoring
+  Metrics Publisher on Application Insights), CORS for the `sixsideddice.com` blog frontend, and the
+  `email-subscription` app's Resend/signing-key settings.
+
+## email-subscription secrets
+
+`resendApiKey` and `emailSubscriptionSigningKey` are `@secure()` params with no default, sourced from azd
+environment variables via `main.parameters.json`. Set them once per environment before provisioning:
+
+```powershell
+azd env set RESEND_API_KEY <value> --secret
+azd env set EMAIL_SUBSCRIPTION_SIGNING_KEY <value> --secret
+```
 
 ## Naming
 

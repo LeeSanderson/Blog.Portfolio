@@ -13,6 +13,7 @@ namespace Blog.Portfolio.Host.Tests;
 public class RoutePrefixArchitectureTests
 {
     private static readonly Regex AppBackendAssemblyName = new(@"^Blog\.Portfolio\.Apps\.(?<app>.+)\.Backend$");
+    private static readonly Regex PascalCaseWordBoundary = new(@"(?<=[a-z0-9])(?=[A-Z])");
 
     [Fact]
     public void EveryFunctionRoute_StartsWithApiAppNamePrefix()
@@ -44,6 +45,14 @@ public class RoutePrefixArchitectureTests
             "a route missing the required app-name prefix must fail the convention check, proving it actually catches violations");
     }
 
+    // Multi-word app names use kebab-case in their route prefix (e.g. "email-subscription") while the
+    // backend project/assembly name is PascalCase (e.g. "EmailSubscription"), so the name extracted from
+    // the assembly needs converting before it's compared against the route.
+#pragma warning disable S4040 // The kebab-case route convention requires lowercase output, not a culture-comparison
+    private static string ToKebabCase(string pascalCaseName) =>
+        PascalCaseWordBoundary.Replace(pascalCaseName, "-").ToLowerInvariant();
+#pragma warning restore S4040
+
     private static List<FunctionEndpoint> DiscoverFunctionEndpoints()
     {
         var hostAssembly = typeof(HostAssemblyMarker).Assembly;
@@ -53,7 +62,7 @@ public class RoutePrefixArchitectureTests
         var appBackendAssemblies = hostAssembly.GetReferencedAssemblies()
             .Select(name => (name, match: AppBackendAssemblyName.Match(name.Name ?? string.Empty)))
             .Where(x => x.match.Success)
-            .Select(x => (assembly: Assembly.Load(x.name), appName: x.match.Groups["app"].Value));
+            .Select(x => (assembly: Assembly.Load(x.name), appName: ToKebabCase(x.match.Groups["app"].Value)));
 
         return appBackendAssemblies
             .SelectMany(x => DiscoverFunctionEndpoints(x.assembly, x.appName))

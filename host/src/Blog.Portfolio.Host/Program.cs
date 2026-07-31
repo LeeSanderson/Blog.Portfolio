@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Blog.Portfolio.Apps.EmailSubscription.Backend;
 using Blog.Portfolio.Host.Extensions;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
@@ -14,7 +15,7 @@ builder.Services
     .AddApplicationInsightsTelemetryWorkerService()
     .ConfigureFunctionsApplicationInsights()
     .AddOpenApiDocumentation()
-    .AddCors();
+    .AddEmailSubscriptionBackend(builder.Configuration);
 
 builder.Services.Configure<JsonSerializerOptions>(options =>
 {
@@ -27,5 +28,8 @@ var app = builder.Build();
 
 // OpenAPI endpoints are automatically exposed in isolated Azure Functions
 // at /api/swagger/ui and /api/openapi/{version}
+// CORS for the sixsideddice.com blog frontend is configured at the Function App resource level
+// (infra/functionapp.bicep siteConfig.cors), not via ASP.NET Core middleware here — the isolated
+// worker's HTTP integration doesn't expose an IApplicationBuilder pipeline to hang UseCors() off.
 
 await app.RunAsync();

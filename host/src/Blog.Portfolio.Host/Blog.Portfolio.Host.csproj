@@ -17,5 +17,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\apps\example\backend\src\Blog.Portfolio.Apps.Example.Backend\Blog.Portfolio.Apps.Example.Backend.csproj" />
+    <ProjectReference Include="..\..\..\apps\email-subscription\backend\src\Blog.Portfolio.Apps.EmailSubscription.Backend\Blog.Portfolio.Apps.EmailSubscription.Backend.csproj" />
   </ItemGroup>
 </Project>
