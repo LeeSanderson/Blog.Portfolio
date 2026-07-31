@@ -1,6 +1,6 @@
 # EmailSubscription — Blog Post Notification Signups
 
-Status: ready-for-agent
+Status: done
 
 ## Problem Statement
 
