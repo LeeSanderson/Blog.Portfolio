@@ -1,0 +1,7 @@
+# Stateless HMAC-signed tokens for confirm/unsubscribe links
+
+Confirm and unsubscribe links need to prove they refer to a genuine Subscriber without an attacker being able to forge or swap one for the other. We chose a stateless HMAC signature over `(subscriberId, purpose)`, keyed by a secret only the app holds — `purpose` ("confirm" vs "unsubscribe") is included so a leaked confirm link can't be replayed as an unsubscribe link. Validating a link means recomputing the HMAC and comparing it; nothing is stored per-token, and links never expire.
+
+The alternative — a random opaque token generated per Subscriber and stored on the record — was rejected because it adds a token column and expiry/rotation bookkeeping this app doesn't need: for a personal blog's subscribe flow, a confirm or unsubscribe link working indefinitely is the desired behavior, not a risk to mitigate.
+
+Because there's no server-side token to revoke, confirm and unsubscribe are both implemented as unconditional, idempotent state writes rather than guarded transitions (e.g. clicking an old confirm link after already unsubscribing moves the Subscriber back to Active — see `CONTEXT.md`). Both endpoints are `GET`, taking `id` and `sig` as query parameters: the email links point to pages on the blog itself, whose JS reads the query string and calls these endpoints — the usual objection to `GET` for a mutating action (email clients/security scanners prefetching raw links) doesn't apply, since the thing embedded in the email is a link to an HTML page, not the API call itself.

@@ -11,3 +11,9 @@ _Avoid_: sub-application, domain, portfolio project
 **Host**:
 The single composition-root Azure Functions project that references every app's `backend/` project. It is the one deployable Azure Function App for the whole portfolio, and owns no app-specific business logic — only cross-cutting wiring.
 _Avoid_: API, Function App (that term names the Azure resource; Host names the project that becomes it)
+
+## Email Subscription
+
+**Subscriber**:
+A person who wants to be emailed about new sixsideddice.com blog posts, identified by email address. Moves through three states: Pending (submitted, not yet confirmed) → Active (confirmed, receives the weekly digest) → Unsubscribed (opted out). Confirming and unsubscribing are unconditional, idempotent writes — whichever action was performed most recently wins, regardless of the Subscriber's prior state (e.g. clicking an old confirm link after already unsubscribing moves them back to Active; there is no guard requiring Pending before confirming).
+_Avoid_: Subscription, Contact, User
