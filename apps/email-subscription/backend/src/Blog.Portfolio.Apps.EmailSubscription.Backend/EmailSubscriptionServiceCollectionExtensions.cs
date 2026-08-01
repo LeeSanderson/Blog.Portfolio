@@ -1,10 +1,10 @@
 using Azure.Data.Tables;
 using Azure.Identity;
 using Azure.Storage.Queues;
-using Blog.Portfolio.Apps.EmailSubscription.Backend.Email;
-using Blog.Portfolio.Apps.EmailSubscription.Backend.Subscribers;
-using Blog.Portfolio.Apps.EmailSubscription.Backend.Tokens;
-using Blog.Portfolio.Apps.EmailSubscription.Backend.WeeklyDigest;
+using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.BlogFeed;
+using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Email;
+using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Subscribers;
+using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Tokens;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;

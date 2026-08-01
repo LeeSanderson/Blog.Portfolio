@@ -73,20 +73,42 @@ should be checking for:
   hand-rolled `Endpoint<TRequest, TResponse>`-style base class in
   `shared/backend`, not a third-party REPR library. See
   `docs/adr/0005-hand-rolled-repr-base.md` for why.
-- **One endpoint per folder** — each endpoint gets its own subfolder under the
-  app's backend project, named after the feature (e.g. `Ping/`). That folder
-  holds the `[Function]`-attributed class plus its `Request`/`Response`
-  records — related types live together instead of being spread across the
-  project root. The function class implements `Endpoint<TRequest, TResponse>`
-  directly (its `[Function]` trigger method calls the class's own
-  `HandleAsync` override) rather than delegating to a separate endpoint
-  object, and holds exactly one `[Function]` method — one class, one endpoint.
-  Name the class `{Feature}Function` (e.g. `PingFunction`), not
-  `{Feature}Functions` — the singular reinforces the one-function-per-class
-  rule. Tests mirror the same subfolder structure (e.g.
-  `tests/.../Ping/PingFunctionTests.cs`). See
-  `apps/example/backend/src/Blog.Portfolio.Apps.Example.Backend/Ping/` for the
-  reference layout.
+- **Backend project layout: `Functions/` and `Services/`** — each app's
+  backend project root holds at most two top-level folders, plus any
+  composition-root files (e.g. `{App}Options.cs`,
+  `{App}ServiceCollectionExtensions.cs`) that stay at the root since they wire
+  up the whole project rather than belonging to one feature or service area:
+  - **`Functions/{Feature}/`** — one subfolder per endpoint/trigger, named
+    after the feature (e.g. `Functions/Ping/`). That folder holds the
+    `[Function]`-attributed class plus its `Request`/`Response` records —
+    related types live together instead of being spread across the project
+    root. The function class implements `Endpoint<TRequest, TResponse>`
+    directly (its `[Function]` trigger method calls the class's own
+    `HandleAsync` override) rather than delegating to a separate endpoint
+    object, and holds exactly one `[Function]` method — one class, one
+    endpoint. Name the class `{Feature}Function` (e.g. `PingFunction`), not
+    `{Feature}Functions` — the singular reinforces the one-function-per-class
+    rule. A queue- or timer-triggered function that consumes a shared
+    contract instead of a private `Request`/`Response` pair (e.g.
+    `SendEmailFunction` consuming `SendEmailMessage`) still gets its own
+    `Functions/{Feature}/` folder.
+  - **`Services/{Area}/`** — everything a function delegates to (stores,
+    token/signing services, outbound senders, shared domain records), grouped
+    by what the code does rather than scattered across the project root. Name
+    a `Services/{Area}/` folder after its responsibility, not after whichever
+    function happens to call it — e.g. the RSS-reading code the
+    `WeeklyDigest` function calls lives in `Services/BlogFeed/`, not
+    `Services/WeeklyDigest/`.
+
+  Not every app needs both folders — one whose functions have no supporting
+  services only needs `Functions/` (see `apps/example/`). Tests mirror the
+  same structure (e.g. `tests/Functions/Ping/PingFunctionTests.cs`,
+  `tests/Services/Tokens/HmacSubscriberTokenServiceTests.cs`). See
+  `apps/example/backend/src/Blog.Portfolio.Apps.Example.Backend/Functions/Ping/`
+  for the reference layout, and
+  `apps/email-subscription/backend/src/Blog.Portfolio.Apps.EmailSubscription.Backend/`
+  for an app large enough to need both `Functions/` and `Services/`. See
+  `docs/adr/0008-functions-services-top-level-split.md` for why.
 
 Architectural decisions that shaped these conventions are recorded in
 `docs/adr/` — check there before proposing something an ADR already settled.

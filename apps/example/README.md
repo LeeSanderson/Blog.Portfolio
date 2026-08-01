@@ -7,4 +7,4 @@ future apps a working template to copy.
 ## backend
 
 `GET /api/example/ping` → `{ "message": "pong" }`, built on the `Endpoint<TRequest, TResponse>` REPR base from
-`shared/backend/`. See `backend/src/Blog.Portfolio.Apps.Example.Backend/Ping/PingFunction.cs`.
+`shared/backend/`. See `backend/src/Blog.Portfolio.Apps.Example.Backend/Functions/Ping/PingFunction.cs`.
