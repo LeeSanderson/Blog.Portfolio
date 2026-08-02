@@ -69,6 +69,10 @@ jobs:
             --name host-publish --dir ./publish
 
       - name: Provision infrastructure
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_SUBSCRIPTION_SIGNING_KEY: ${{ secrets.EMAIL_SUBSCRIPTION_SIGNING_KEY }}
+          EMAIL_SUBSCRIPTION_FROM_ADDRESS: ${{ vars.EMAIL_SUBSCRIPTION_FROM_ADDRESS }}
         run: azd provision --no-prompt
 
       - name: Deploy host from CI artifact

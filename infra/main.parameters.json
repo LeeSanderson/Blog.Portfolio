@@ -13,6 +13,9 @@
     },
     "emailSubscriptionSigningKey": {
       "value": "${EMAIL_SUBSCRIPTION_SIGNING_KEY}"
+    },
+    "emailSubscriptionFromAddress": {
+      "value": "${EMAIL_SUBSCRIPTION_FROM_ADDRESS:=updates@sixsideddice.com}"
     }
   }
 }

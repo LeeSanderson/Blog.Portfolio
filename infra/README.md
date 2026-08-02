@@ -25,6 +25,15 @@ azd env set RESEND_API_KEY <value> --secret
 azd env set EMAIL_SUBSCRIPTION_SIGNING_KEY <value> --secret
 ```
 
+`emailSubscriptionFromAddress` is parameterised the same way but isn't a secret, so its `main.parameters.json`
+entry uses the `${EMAIL_SUBSCRIPTION_FROM_ADDRESS:=updates@sixsideddice.com}` form — falls back to
+`updates@sixsideddice.com` (matching the Bicep param default) when the azd environment variable is unset or
+empty, so you only need to set it if an environment should send from a different address:
+
+```powershell
+azd env set EMAIL_SUBSCRIPTION_FROM_ADDRESS <value>
+```
+
 ## Naming
 
 Resources scoped to the resource group (Log Analytics, Application Insights, the managed identity, the App
@@ -79,3 +88,41 @@ none of them are secrets, since OIDC needs no client secret:
 
 If `azd pipeline config` sets any of these as **secrets** instead of variables, move them to repository
 variables — `backend-cd.yml` reads them via `vars.*`.
+
+### App secrets for the Function App (e.g. `RESEND_API_KEY`)
+
+Unlike the `AZURE_*` identifiers above, the app's own secrets (currently `RESEND_API_KEY` and
+`EMAIL_SUBSCRIPTION_SIGNING_KEY`) are real secrets and must be added as **repository secrets** (Settings →
+Secrets and variables → Actions → Secrets), not variables. `backend-cd.yml`'s "Provision infrastructure" step
+reads them via `secrets.*` and exposes them as the environment variables that `main.parameters.json` resolves
+(`${RESEND_API_KEY}`, `${EMAIL_SUBSCRIPTION_SIGNING_KEY}`) when it runs `azd provision`. The non-secret
+counterpart, `EMAIL_SUBSCRIPTION_FROM_ADDRESS`, follows the same wiring but as a **repository variable** read
+via `vars.*` — leave it unset in repos/environments that are happy with the default `updates@sixsideddice.com`.
+
+`.azure/` is gitignored, so CI never has the local azd environment created by `azd env set` on your machine —
+each CD run resolves these parameters purely from the repository secrets/variables above. `azd provision` still
+reconciles the same resource group as your local environment because `AZURE_ENV_NAME` (and the naming derived
+from it) is unchanged, not because any local state carries over.
+
+To add a new app setting for the Function App in future (secret or not), wire it through all four layers:
+
+1. **Bicep**: add a param to `functionapp.bicep` (and thread it through `main.bicep`), then add an entry for it
+   in the `appSettings` array in `functionapp.bicep`. Use `@secure()` for anything sensitive.
+2. **`main.parameters.json`**: if it's sourced from an azd environment variable rather than a fixed default, add
+   `"paramName": { "value": "${ENV_VAR_NAME}" }`. If the Bicep param already has a sensible default and the
+   setting is genuinely optional, use the `${ENV_VAR_NAME:=default value}` form instead of a bare `${ENV_VAR_NAME}`
+   — see the gotcha below for why the colon matters.
+3. **Local**: `azd env set ENV_VAR_NAME <value>` (add `--secret` for sensitive values) so `azd provision` can
+   resolve it locally.
+4. **CI/CD**: add `ENV_VAR_NAME` as a repository variable (non-secret) or secret (sensitive), then expose it via
+   `vars.*`/`secrets.*` as an env var on the "Provision infrastructure" step in `backend-cd.yml`, matching the
+   pattern above.
+
+**Gotcha with optional settings in CI**: `${ENV_VAR_NAME}` (no default) resolves to an empty string if the
+variable is unset anywhere azd looks — it does not fall back to the Bicep param's default, so never use the bare
+form for an optional setting. Worse, `${ENV_VAR_NAME=default}` (no colon) only falls back when the variable is
+*completely unset* — but `vars.*`/`secrets.*` in a GitHub Actions `env:` block always sets the env var, to an
+empty string when the repository variable/secret doesn't exist. That combination means an unconfigured optional
+repository variable would silently deploy an empty string instead of the intended default. Use the colon form,
+`${ENV_VAR_NAME:=default}`, which falls back on empty *or* unset — this is what `emailSubscriptionFromAddress`
+does above.
