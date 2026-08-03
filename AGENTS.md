@@ -19,3 +19,9 @@ Canonical role names used as-is (`needs-triage`, `needs-info`, `ready-for-agent`
 ### Domain docs
 
 Single-context layout: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Running locally
+
+Use `./run-local.ps1` from the repo root to run the whole stack (Host + Azurite) for manual or agent-driven
+testing — the Host is reachable at `http://localhost:7240`. Don't use bare `func start` for anything that
+touches storage (e.g. email-subscription); it starts no storage emulator.

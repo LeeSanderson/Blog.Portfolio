@@ -40,11 +40,24 @@ dotnet build
 dotnet test
 ```
 
-### Running the Azure Functions Locally
+### Running Everything Locally
 
 ```powershell
-cd host/src/Blog.Portfolio.Host
-func start
+./run-local.ps1
+```
+
+Starts the Aspire AppHost, which runs the Host together with an Azurite storage emulator — needed for
+anything backed by Table or Queue storage (e.g. all of email-subscription). The Host is reachable at
+`http://localhost:7240`.
+
+Running `func start` directly from `host/src/Blog.Portfolio.Host` also works, but starts no storage
+emulator, so only endpoints that don't touch storage will function correctly.
+
+The first time you run this, the Aspire dashboard needs a trusted local HTTPS dev certificate. If it fails
+to load with an `UntrustedRoot` SSL error, trust the certificate once with:
+
+```powershell
+dotnet dev-certs https --trust
 ```
 
 ## Code Quality
