@@ -28,8 +28,18 @@ public static class EmailSubscriptionServiceCollectionExtensions
                 ParseUriOrDefault(configuration["EMAIL_SUBSCRIPTION_UNSUBSCRIBE_URL"], options.UnsubscribePageUrl);
         });
 
-        services.AddSingleton(_ => CreateTableServiceClient(configuration).GetTableClient(SubscribersTableName));
-        services.AddSingleton(_ => CreateQueueServiceClient(configuration).GetQueueClient(SendEmailMessage.QueueName));
+        services.AddSingleton(_ =>
+        {
+            var tableClient = CreateTableServiceClient(configuration).GetTableClient(SubscribersTableName);
+            tableClient.CreateIfNotExists();
+            return tableClient;
+        });
+        services.AddSingleton(_ =>
+        {
+            var queueClient = CreateQueueServiceClient(configuration).GetQueueClient(SendEmailMessage.QueueName);
+            queueClient.CreateIfNotExists();
+            return queueClient;
+        });
 
         services.AddSingleton<ISubscriberStore, TableStorageSubscriberStore>();
         services.AddSingleton<IEmailOutbox, QueueEmailOutbox>();
