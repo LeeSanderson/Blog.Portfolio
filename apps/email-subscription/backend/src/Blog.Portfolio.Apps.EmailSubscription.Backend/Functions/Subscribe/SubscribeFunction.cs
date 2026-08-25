@@ -69,6 +69,8 @@ public sealed class SubscribeFunction : Endpoint<SubscribeRequest, SubscribeResp
         return new SubscribeResponse(GenericMessage);
     }
 
-    private Task SendConfirmationEmailAsync(Subscriber subscriber, CancellationToken cancellationToken) =>
-        _emailOutbox.EnqueueAsync(_confirmationEmailBuilder.Build(subscriber), cancellationToken);
+    private Task SendConfirmationEmailAsync(Subscriber subscriber, CancellationToken cancellationToken)
+    {
+        return _emailOutbox.EnqueueAsync(_confirmationEmailBuilder.Build(subscriber), cancellationToken);
+    }
 }

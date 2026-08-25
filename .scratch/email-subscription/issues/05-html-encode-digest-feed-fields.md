@@ -22,7 +22,7 @@ See `spec-email-snapshot-testing.md` for the full reasoning.
       any churn here means the fixture drifted — investigate rather than re-accept
 - [x] Encoding kept out of the snapshots so "template shape" and "encoding rule" fail independently, each
       failure naming its own cause
-- [x] Suite green on Windows and on the Linux CI runner
+- [~] Suite green on Windows (verified locally). Linux CI not yet observed — see ticket 04's note.
 
 **Context that shaped this:**
 

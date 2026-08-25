@@ -46,7 +46,8 @@ See `spec-email-snapshot-testing.md` for the full reasoning.
       launcher is off (that line names only xUnit/FluentAssertions/Moq/coverlet today and becomes wrong the
       moment Verify lands)
 - [x] ADR-0009 records choosing Verify over a hand-rolled approved-file comparison
-- [x] Suite green on Windows **and** on the Linux CI runner
+- [~] Suite green on Windows (verified: 25/25 locally). The Linux CI runner half is **not yet observed** —
+      both commits are unpushed, so no CI run exists. Reopen this box if Backend CI goes red on push.
 
 **Verify before assuming — each has a decided fallback:**
 
@@ -86,3 +87,18 @@ Two consequences of that third point:
 code paths and captured to disk. The snapshots Verify then produced from the new builders were byte-identical
 to that capture — the only difference being the UTF-8 BOM Verify writes into the file itself. The approved
 files therefore document today's output exactly, and no assertion in either function test class changed.
+
+**Post-review corrections** (from `/code-review`, two axes):
+
+- The "Suite green on Windows **and** on the Linux CI runner" box was ticked on the Windows half only — the
+  commits are unpushed, so no CI run exists. Downgraded to `[~]` above rather than left claiming something
+  unobserved.
+- The xunit v3 question is now tracked as its own decision ticket, `06-decide-on-xunit-v3-migration.md`,
+  rather than living only in an ADR paragraph. The DiffPlex pin is that guard's symptom already being paid.
+- User story 21 ("a single documented rule for how feed content is encoded") was not actually delivered by
+  ticket 05 — the rule existed only as the shape of `RenderPost`. Now written down in `CODING_STANDARDS.md`.
+- `Directory.Build.props` gains repo-wide `SolutionDir`/`SolutionName`. Flagged for Lee as the one piece of
+  this change that reaches outside the app: Verify's build-time solution discovery searches three directory
+  levels up, and test projects here sit four below the root, so the build failed until it was told
+  explicitly. It is condition-guarded (`'$(SolutionDir)' == ''`), so it yields to any real solution build.
+  Unrelated to Verify's *approved-file* directory, which is left at its default as the ticket asked.

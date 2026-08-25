@@ -79,6 +79,15 @@ should be checking for:
     unattended: they can read console output but cannot see or dismiss a window.
   - See `docs/adr/0009-verify-for-email-snapshots.md` for why Verify rather than
     a hand-rolled approved-file comparison.
+- **Encoding content from the blog feed** — every value an email renders that
+  came from the RSS feed is HTML-encoded, whether it lands in text or in an
+  attribute. One rule, no trusted fields and no per-field exceptions to
+  remember: an email builder that interpolates a feed value encodes it. Values
+  the app generates itself — confirm and unsubscribe links — are not feed
+  content and are interpolated as they are. If a feed description ever needs to
+  carry real markup, that shows up as a failing Digest snapshot, which is the
+  signal to revisit this with the evidence in hand rather than to accept the
+  diff away.
 - **Project layout** — one folder per app under `apps/{app-name}/`, each
   optionally with its own `backend/` and/or `frontend/`; cross-app code goes in
   `shared/backend/` or `shared/frontend/{framework}/`; `host/` is the single
