@@ -41,6 +41,13 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
     <PackageVersion Include="System.ServiceModel.Syndication" Version="10.0.0" />
+    <!-- Held at 3.1.2 rather than the current 3.3.1: later releases require Verify 31.24.0+, which is binary
+         incompatible with the frozen Verify.Xunit below and fails at runtime with a MethodAccessException. -->
+    <PackageVersion Include="Verify.DiffPlex" Version="3.1.2" />
+    <!-- Verify.Xunit is the xunit v2 package; Verify.XunitV3 is the v3 one, and this solution is on xunit 2.x.
+         The v2 package is deprecated as "Legacy" and frozen at 31.12.5, so this is its final version — moving
+         off it means migrating the whole solution to xunit v3. See docs/adr/0009-verify-for-email-snapshots.md. -->
+    <PackageVersion Include="Verify.Xunit" Version="31.12.5" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
   </ItemGroup>

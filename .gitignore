@@ -275,3 +275,6 @@ __pycache__/
 # MSBuild Binary and Structured Log
 *.binlog
 .azure
+
+# Verify snapshot working files from a failed comparison
+*.received.*

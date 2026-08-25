@@ -23,8 +23,9 @@ public class WeeklyDigestFunctionTests
             _feedReader.Object,
             _subscriberStore.Object,
             _emailOutbox.Object,
-            new SubscriberLinkBuilder(new HmacSubscriberTokenService("test-signing-key")),
-            Options.Create(new EmailSubscriptionOptions()));
+            new DigestEmailBuilder(
+                new SubscriberLinkBuilder(new HmacSubscriberTokenService("test-signing-key")),
+                Options.Create(new EmailSubscriptionOptions())));
     }
 
     [Fact]

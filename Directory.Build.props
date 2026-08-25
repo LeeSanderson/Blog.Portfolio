@@ -6,4 +6,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+
+  <!-- Verify auto-discovers the solution by searching only three directory levels up from the project;
+       test projects here sit four below the root, so name it explicitly and skip that discovery. -->
+  <PropertyGroup Condition="'$(SolutionDir)' == '' Or '$(SolutionDir)' == '*Undefined*'">
+    <SolutionDir>$(MSBuildThisFileDirectory)</SolutionDir>
+    <SolutionName>Blog.Portfolio</SolutionName>
+  </PropertyGroup>
 </Project>

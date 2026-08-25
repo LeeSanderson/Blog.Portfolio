@@ -48,6 +48,8 @@ public static class EmailSubscriptionServiceCollectionExtensions
                 serviceProvider.GetRequiredService<IOptions<EmailSubscriptionOptions>>().Value.SigningKey));
         services.AddSingleton<SubscriberLinkBuilder>();
         services.AddSingleton<SubscriberLinkAction>();
+        services.AddSingleton<ConfirmationEmailBuilder>();
+        services.AddSingleton<DigestEmailBuilder>();
 
         services.AddHttpClient<IEmailSender, ResendEmailSender>(
             client => client.BaseAddress = new Uri(ResendBaseAddress));

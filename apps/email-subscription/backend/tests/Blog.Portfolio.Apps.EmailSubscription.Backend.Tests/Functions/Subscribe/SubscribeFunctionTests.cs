@@ -21,8 +21,9 @@ public class SubscribeFunctionTests
         _function = new SubscribeFunction(
             _subscriberStore.Object,
             _emailOutbox.Object,
-            new SubscriberLinkBuilder(new HmacSubscriberTokenService("test-signing-key")),
-            Options.Create(new EmailSubscriptionOptions()));
+            new ConfirmationEmailBuilder(
+                new SubscriberLinkBuilder(new HmacSubscriberTokenService("test-signing-key")),
+                Options.Create(new EmailSubscriptionOptions())));
     }
 
     [Fact]

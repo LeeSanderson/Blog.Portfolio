@@ -62,8 +62,23 @@ should be checking for:
   constraint, or the reasoning behind a decision that would otherwise be
   lost. Never comment *what* the code does — that's what the names are for.
 - **Testing stack** — xUnit + FluentAssertions for assertions + Moq for mocking;
-  coverlet for coverage. See the [`tdd` skill](.claude/skills/tdd/SKILL.md) for
-  what a good test looks like on this stack.
+  coverlet for coverage; Verify for snapshot-testing rendered HTML emails. See
+  the [`tdd` skill](.claude/skills/tdd/SKILL.md) for what a good test looks like
+  on this stack.
+  - A Verify snapshot compares output against an approved `*.verified.html` file
+    committed beside its test, so the artifact is a real email that renders when
+    opened and diffs readably in review. A failing comparison writes a
+    `*.received.html` next to it, which is git-ignored. **Accepting** an
+    intentional change means replacing the approved file with the received one
+    and committing that diff. Never accept a diff to make a build green — a
+    snapshot diff is a question about behaviour, and blind acceptance turns the
+    suite from a safety net into a rubber stamp.
+  - The test project's module initializer disables Verify's diff-tool launcher
+    and enables DiffPlex, so a failure prints an inline textual diff and no run
+    ever opens a GUI window. This is for the agents that run this suite
+    unattended: they can read console output but cannot see or dismiss a window.
+  - See `docs/adr/0009-verify-for-email-snapshots.md` for why Verify rather than
+    a hand-rolled approved-file comparison.
 - **Project layout** — one folder per app under `apps/{app-name}/`, each
   optionally with its own `backend/` and/or `frontend/`; cross-app code goes in
   `shared/backend/` or `shared/frontend/{framework}/`; `host/` is the single

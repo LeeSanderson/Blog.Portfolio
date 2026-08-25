@@ -1,9 +1,7 @@
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.BlogFeed;
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Email;
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Subscribers;
-using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Tokens;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Options;
 
 namespace Blog.Portfolio.Apps.EmailSubscription.Backend.Functions.WeeklyDigest;
 
@@ -14,21 +12,18 @@ public sealed class WeeklyDigestFunction
     private readonly IBlogFeedReader _feedReader;
     private readonly ISubscriberStore _subscriberStore;
     private readonly IEmailOutbox _emailOutbox;
-    private readonly SubscriberLinkBuilder _linkBuilder;
-    private readonly EmailSubscriptionOptions _options;
+    private readonly DigestEmailBuilder _digestEmailBuilder;
 
     public WeeklyDigestFunction(
         IBlogFeedReader feedReader,
         ISubscriberStore subscriberStore,
         IEmailOutbox emailOutbox,
-        SubscriberLinkBuilder linkBuilder,
-        IOptions<EmailSubscriptionOptions> options)
+        DigestEmailBuilder digestEmailBuilder)
     {
         _feedReader = feedReader;
         _subscriberStore = subscriberStore;
         _emailOutbox = emailOutbox;
-        _linkBuilder = linkBuilder;
-        _options = options.Value;
+        _digestEmailBuilder = digestEmailBuilder;
     }
 
     // No try/catch here: an unhandled RSS fetch/parse failure is caught and logged to Application Insights by
@@ -54,23 +49,7 @@ public sealed class WeeklyDigestFunction
 
         foreach (var subscriber in activeSubscribers)
         {
-            await _emailOutbox.EnqueueAsync(BuildDigestMessage(subscriber, recentPosts), cancellationToken);
+            await _emailOutbox.EnqueueAsync(_digestEmailBuilder.Build(subscriber, recentPosts), cancellationToken);
         }
-    }
-
-    private SendEmailMessage BuildDigestMessage(Subscriber subscriber, IEnumerable<BlogPost> posts)
-    {
-        var unsubscribeLink = _linkBuilder.Build(_options.UnsubscribePageUrl, subscriber.Id, TokenPurpose.Unsubscribe);
-
-        var postsHtml = string.Concat(posts.Select(post =>
-            $"""<li><a href="{post.Link}">{post.Title}</a><p>{post.Description}</p></li>"""));
-
-        var html = $"""
-            <p>New posts on sixsideddice.com this week:</p>
-            <ul>{postsHtml}</ul>
-            <p><a href="{unsubscribeLink}">Unsubscribe</a></p>
-            """;
-
-        return new SendEmailMessage(subscriber.Email, "New posts on sixsideddice.com", html);
     }
 }

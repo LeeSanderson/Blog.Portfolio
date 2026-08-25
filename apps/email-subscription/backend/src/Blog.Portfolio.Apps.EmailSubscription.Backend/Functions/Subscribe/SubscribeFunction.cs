@@ -1,11 +1,9 @@
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Email;
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Subscribers;
-using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Tokens;
 using Blog.Portfolio.Shared.Backend;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Options;
 
 namespace Blog.Portfolio.Apps.EmailSubscription.Backend.Functions.Subscribe;
 
@@ -16,19 +14,16 @@ public sealed class SubscribeFunction : Endpoint<SubscribeRequest, SubscribeResp
 
     private readonly ISubscriberStore _subscriberStore;
     private readonly IEmailOutbox _emailOutbox;
-    private readonly SubscriberLinkBuilder _linkBuilder;
-    private readonly EmailSubscriptionOptions _options;
+    private readonly ConfirmationEmailBuilder _confirmationEmailBuilder;
 
     public SubscribeFunction(
         ISubscriberStore subscriberStore,
         IEmailOutbox emailOutbox,
-        SubscriberLinkBuilder linkBuilder,
-        IOptions<EmailSubscriptionOptions> options)
+        ConfirmationEmailBuilder confirmationEmailBuilder)
     {
         _subscriberStore = subscriberStore;
         _emailOutbox = emailOutbox;
-        _linkBuilder = linkBuilder;
-        _options = options.Value;
+        _confirmationEmailBuilder = confirmationEmailBuilder;
     }
 
     [Function("EmailSubscriptionSubscribe")]
@@ -74,18 +69,6 @@ public sealed class SubscribeFunction : Endpoint<SubscribeRequest, SubscribeResp
         return new SubscribeResponse(GenericMessage);
     }
 
-    private Task SendConfirmationEmailAsync(Subscriber subscriber, CancellationToken cancellationToken)
-    {
-        var confirmLink = _linkBuilder.Build(_options.ConfirmPageUrl, subscriber.Id, TokenPurpose.Confirm);
-        var unsubscribeLink = _linkBuilder.Build(_options.UnsubscribePageUrl, subscriber.Id, TokenPurpose.Unsubscribe);
-
-        var html = $"""
-            <p>Thanks for subscribing to sixsideddice.com blog updates!</p>
-            <p><a href="{confirmLink}">Confirm your subscription</a></p>
-            <p>Didn't request this? <a href="{unsubscribeLink}">Unsubscribe</a>.</p>
-            """;
-
-        return _emailOutbox.EnqueueAsync(
-            new SendEmailMessage(subscriber.Email, "Confirm your subscription", html), cancellationToken);
-    }
+    private Task SendConfirmationEmailAsync(Subscriber subscriber, CancellationToken cancellationToken) =>
+        _emailOutbox.EnqueueAsync(_confirmationEmailBuilder.Build(subscriber), cancellationToken);
 }

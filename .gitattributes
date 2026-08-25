@@ -1,0 +1,4 @@
+# Verify's approved email snapshots are compared against output built from raw string literals in .cs
+# files. This repo has core.autocrlf=true, so a Windows working tree holds CRLF while the Linux CI runner
+# checks out LF; pinning the approved files to LF keeps one committed byte sequence on both platforms.
+*.verified.html text eol=lf
