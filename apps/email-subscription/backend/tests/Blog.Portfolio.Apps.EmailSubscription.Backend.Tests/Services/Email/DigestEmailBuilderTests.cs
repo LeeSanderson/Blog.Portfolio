@@ -41,4 +41,19 @@ public class DigestEmailBuilderTests
         message.Subject.Should().Be("New posts on sixsideddice.com");
         await Verify(message.HtmlBody, "html");
     }
+
+    [Fact]
+    public void Build_HtmlEncodesEveryFieldItTakesFromTheFeed()
+    {
+        var awkwardPost = new BlogPost(
+            "Dice & Dragons: <b>a primer</b>",
+            "https://www.sixsideddice.com/posts/dice-and-dragons?tag=d&d",
+            "Ampersands & angle brackets < > in a teaser.",
+            PublishedAt);
+
+        var message = _builder.Build(ActiveSubscriber, [awkwardPost]);
+
+        message.HtmlBody.Should().Contain(
+            """<li><a href="https://www.sixsideddice.com/posts/dice-and-dragons?tag=d&amp;d">Dice &amp; Dragons: &lt;b&gt;a primer&lt;/b&gt;</a><p>Ampersands &amp; angle brackets &lt; &gt; in a teaser.</p></li>""");
+    }
 }

@@ -7,22 +7,22 @@ Encode all three, uniformly, driven by its own failing test.
 **Blocked by:** 04 (the snapshot safety net has to exist first, so this change is provably the only behaviour
 change and isn't bundled into the extraction)
 
-**Status:** ready-for-agent
+**Status:** done
 
 See `spec-email-snapshot-testing.md` for the full reasoning.
 
-- [ ] A focused FluentAssertions test on an awkward post title, written **red first** — it must fail against
+- [x] A focused FluentAssertions test on an awkward post title, written **red first** — it must fail against
       the unencoded builder before the fix lands
-- [ ] All three interpolated RSS values HTML-encoded in `DigestEmailBuilder`: title, description, and the post
+- [x] All three interpolated RSS values HTML-encoded in `DigestEmailBuilder`: title, description, and the post
       link where it is used as an `href`
-- [ ] One uniform rule, no per-field exceptions — nothing that needs an explanatory comment to be
+- [x] One uniform rule, no per-field exceptions — nothing that needs an explanatory comment to be
       understandable
-- [ ] The confirmation email is untouched: it renders no feed content, only generated links
-- [ ] Both approved `.html` files unchanged by this ticket. Ticket 04's fixture is deliberately plain ASCII, so
+- [x] The confirmation email is untouched: it renders no feed content, only generated links
+- [x] Both approved `.html` files unchanged by this ticket. Ticket 04's fixture is deliberately plain ASCII, so
       any churn here means the fixture drifted — investigate rather than re-accept
-- [ ] Encoding kept out of the snapshots so "template shape" and "encoding rule" fail independently, each
+- [x] Encoding kept out of the snapshots so "template shape" and "encoding rule" fail independently, each
       failure naming its own cause
-- [ ] Suite green on Windows and on the Linux CI runner
+- [x] Suite green on Windows and on the Linux CI runner
 
 **Context that shaped this:**
 
@@ -35,3 +35,16 @@ See `spec-email-snapshot-testing.md` for the full reasoning.
   revisited with the evidence in hand. That failure is the intended signal, not a nuisance to accept away.
 - Found by reading the code during a grilling session, not from a reported bug — no Subscriber is known to
   have received a mangled Digest. It is nonetheless live in production.
+
+## Comments
+
+Written red first. Against the unencoded builder the test failed with the live bug visible in the message:
+`<li><a href="...?tag=d&d">Dice & Dragons: <b>a primer</b></a>...` — the `<b>` tags landing as markup rather
+than as text, which is the injection the ticket describes.
+
+The fix routes all three feed values through `HtmlEncoder.Default.Encode` in a `RenderPost` helper, so every
+field the Digest takes from the feed visibly goes through the same call and there is no per-field exception
+to remember.
+
+Both approved `.html` files came through unchanged — `git diff -- '*.verified.html'` is empty — confirming
+ticket 04's fixture stayed clear of the characters this encoding touches.

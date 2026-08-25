@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.BlogFeed;
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Subscribers;
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Tokens;
@@ -20,8 +21,7 @@ public sealed class DigestEmailBuilder
     {
         var unsubscribeLink = _linkBuilder.Build(_options.UnsubscribePageUrl, subscriber.Id, TokenPurpose.Unsubscribe);
 
-        var postsHtml = string.Concat(posts.Select(post =>
-            $"""<li><a href="{post.Link}">{post.Title}</a><p>{post.Description}</p></li>"""));
+        var postsHtml = string.Concat(posts.Select(RenderPost));
 
         var html = $"""
             <p>New posts on sixsideddice.com this week:</p>
@@ -30,5 +30,14 @@ public sealed class DigestEmailBuilder
             """;
 
         return new SendEmailMessage(subscriber.Email, "New posts on sixsideddice.com", html);
+    }
+
+    private static string RenderPost(BlogPost post)
+    {
+        var link = HtmlEncoder.Default.Encode(post.Link);
+        var title = HtmlEncoder.Default.Encode(post.Title);
+        var description = HtmlEncoder.Default.Encode(post.Description);
+
+        return $"""<li><a href="{link}">{title}</a><p>{description}</p></li>""";
     }
 }
