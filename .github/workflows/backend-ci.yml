@@ -27,20 +27,25 @@ jobs:
 
       # The Aspire integration test (ticket 04) starts a real Functions host via Azure Functions Core
       # Tools, which GitHub-hosted runners don't preinstall.
-      # The runner carries an npm auth token that the public registry rejects with E401, and there is no
-      # user npmrc holding it, so both config files are pointed at absent paths to install this public
-      # package anonymously. The two paths must differ: npm aborts before resolving config if the same
-      # file is loaded as both user and global. The probes report where config came from without printing
-      # any npmrc contents or env values, either of which could leak the token into a public log.
+      # Installed from the GitHub release rather than npm: the runner's npm sends an auth token that the
+      # public registry rejects with E401, and it survives bypassing the user config, the global config
+      # and the registry setting, so the token comes from a config level a workflow can't reach. The
+      # version matches npm's `latest` dist-tag, and the release's own .sha2 is checked because this
+      # pulls a binary into CI over the network.
       - name: Install Azure Functions Core Tools
         env:
-          NPM_CONFIG_USERCONFIG: /tmp/npmrc-absent-user
-          NPM_CONFIG_GLOBALCONFIG: /tmp/npmrc-absent-global
+          CORE_TOOLS_VERSION: "4.14.0"
         run: |
-          echo "registry:     $(npm config get registry)"
-          echo "globalconfig: $(npm config get globalconfig)"
-          echo "npm/node auth env vars present: $(env | grep -cE '^(npm_config_|NPM_|NODE_AUTH)' || true)"
-          npm install -g azure-functions-core-tools@4 --unsafe-perm true
+          base="https://github.com/Azure/azure-functions-core-tools/releases/download/${CORE_TOOLS_VERSION}"
+          asset="Azure.Functions.Cli.linux-x64.${CORE_TOOLS_VERSION}.zip"
+          curl -sSfL -o /tmp/func.zip "${base}/${asset}"
+          curl -sSfL -o /tmp/func.sha2 "${base}/${asset}.sha2"
+          echo "$(awk '{print $1}' /tmp/func.sha2)  /tmp/func.zip" | sha256sum -c -
+          unzip -q /tmp/func.zip -d "$HOME/func"
+          chmod +x "$HOME/func/func"
+          if [ -f "$HOME/func/gozip" ]; then chmod +x "$HOME/func/gozip"; fi
+          echo "$HOME/func" >> "$GITHUB_PATH"
+          "$HOME/func/func" --version
 
       - name: Restore
         run: dotnet restore Blog.Portfolio.slnx
