@@ -27,8 +27,14 @@ jobs:
 
       # The Aspire integration test (ticket 04) starts a real Functions host via Azure Functions Core
       # Tools, which GitHub-hosted runners don't preinstall.
+      # The registry is pinned because the runner's own npm config rejected an anonymous install of this
+      # public package with E401; `npm config get registry` is kept so a recurrence names the culprit.
       - name: Install Azure Functions Core Tools
-        run: npm install -g azure-functions-core-tools@4 --unsafe-perm true
+        env:
+          npm_config_registry: https://registry.npmjs.org/
+        run: |
+          npm config get registry
+          npm install -g azure-functions-core-tools@4 --unsafe-perm true
 
       - name: Restore
         run: dotnet restore Blog.Portfolio.slnx
