@@ -25,10 +25,12 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      # Temp: Install version 4.13.2 as the latest version (4.14.0) has a bug that prevents installation.
+      # Temp: Install version 4.12.1 as the latest version 4.14.0 has a bug that prevents installation 
+      # and 4.13.2 has a bug that prevents running the function host on Linux.
       # See: https://github.com/Azure/azure-functions-core-tools/issues/5569
+      # And: https://github.com/Azure/azure-functions-core-tools/issues/5538
       - name: Install Azure Functions Core Tools
-        run: npm i --verbose -g azure-functions-core-tools@4.13.2 --unsafe-perm true
+        run: npm i --verbose -g azure-functions-core-tools@4.12.1 --unsafe-perm true
 
       - name: Restore
         run: dotnet restore Blog.Portfolio.slnx
