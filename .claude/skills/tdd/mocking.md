@@ -13,6 +13,13 @@ Don't mock:
 - Internal collaborators
 - Anything you control
 
+**"Anything you control" means the behaviour, not the interface.** An interface you declared is still a system
+boundary if what sits behind it is not yours. In this repo `ISubscriberStore` is a port over Azure Table
+Storage, `IEmailOutbox` over Azure Queue Storage, and `IEmailSender` over Resend — all owned interfaces, none
+of them internal collaborators, and all legitimately substituted in tests. The question to ask is not "did I
+write this interface?" but "does a real call to it leave the process?" If it does, it belongs to the first
+list, however local the type looks.
+
 ## Designing for Mockability
 
 At system boundaries, design interfaces that are easy to mock:
@@ -61,7 +68,7 @@ public interface IOrdersApi
 ```
 
 The SDK approach means:
-- Each `Mock<IOrdersApi>` setup returns one specific shape
+- Each substituted `IOrdersApi` member returns one specific shape
 - No conditional logic in test setup
 - Easier to see which operations a test exercises
 - Compiler-checked types per operation

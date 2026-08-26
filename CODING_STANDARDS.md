@@ -61,10 +61,15 @@ should be checking for:
   the code genuinely can't say it: an obscure algorithm, a non-obvious
   constraint, or the reasoning behind a decision that would otherwise be
   lost. Never comment *what* the code does — that's what the names are for.
-- **Testing stack** — xUnit v3 + FluentAssertions for assertions + Moq for mocking;
-  coverlet for coverage; Verify for snapshot-testing rendered HTML emails. See
-  the [`tdd` skill](.claude/skills/tdd/SKILL.md) for what a good test looks like
-  on this stack.
+- **Testing stack** — xUnit v3 + AwesomeAssertions for assertions + NSubstitute
+  for mocking; coverlet for coverage; Verify for snapshot-testing rendered HTML
+  emails. See the [`tdd` skill](.claude/skills/tdd/SKILL.md) for what a good test
+  looks like on this stack.
+  - `NSubstitute.Analyzers.CSharp` is referenced wherever NSubstitute is, and its
+    rules are errors rather than warnings. NSubstitute's arrange and assert syntax
+    are real method calls, so `sub.Received(1);` with no call after it compiles,
+    asserts nothing, and passes — NS5000 is what stops a silently vacuous
+    assertion reaching the suite. Don't suppress it; fix the call.
   - A Verify snapshot compares output against an approved `*.verified.html` file
     committed beside its test, so the artifact is a real email that renders when
     opened and diffs readably in review. A failing comparison writes a

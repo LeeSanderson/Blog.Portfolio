@@ -1,7 +1,7 @@
+using AwesomeAssertions;
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Email;
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Subscribers;
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Tokens;
-using FluentAssertions;
 using Microsoft.Extensions.Options;
 
 namespace Blog.Portfolio.Apps.EmailSubscription.Backend.Tests.Services.Email;

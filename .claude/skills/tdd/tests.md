@@ -33,9 +33,9 @@ Characteristics:
 [Fact]
 public async Task CheckoutCallsPaymentServiceProcess()
 {
-    var mockPayment = new Mock<IPaymentService>();
-    await Checkout(cart, payment, mockPayment.Object);
-    mockPayment.Verify(p => p.Process(cart.Total), Times.Once);
+    var payment = Substitute.For<IPaymentService>();
+    await Checkout(cart, paymentMethod, payment);
+    await payment.Received(1).Process(cart.Total);
 }
 ```
 

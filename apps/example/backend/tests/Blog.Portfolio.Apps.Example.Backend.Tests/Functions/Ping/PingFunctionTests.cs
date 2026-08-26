@@ -1,5 +1,5 @@
+using AwesomeAssertions;
 using Blog.Portfolio.Apps.Example.Backend.Functions.Ping;
-using FluentAssertions;
 
 namespace Blog.Portfolio.Apps.Example.Backend.Tests.Functions.Ping;
 

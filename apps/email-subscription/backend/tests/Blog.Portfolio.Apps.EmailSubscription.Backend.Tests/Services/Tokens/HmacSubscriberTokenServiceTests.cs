@@ -1,5 +1,5 @@
+using AwesomeAssertions;
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Tokens;
-using FluentAssertions;
 
 namespace Blog.Portfolio.Apps.EmailSubscription.Backend.Tests.Services.Tokens;
 

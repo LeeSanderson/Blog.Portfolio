@@ -1,8 +1,8 @@
+using AwesomeAssertions;
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Functions.Unsubscribe;
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Subscribers;
 using Blog.Portfolio.Apps.EmailSubscription.Backend.Services.Tokens;
-using FluentAssertions;
-using Moq;
+using NSubstitute;
 
 namespace Blog.Portfolio.Apps.EmailSubscription.Backend.Tests.Functions.Unsubscribe;
 
@@ -10,44 +10,44 @@ public class UnsubscribeFunctionTests
 {
     private static readonly Guid SubscriberId = Guid.NewGuid();
 
-    private readonly Mock<ISubscriberStore> _subscriberStore = new();
+    private readonly ISubscriberStore _subscriberStore = Substitute.For<ISubscriberStore>();
     private readonly HmacSubscriberTokenService _tokenService = new("test-signing-key");
     private readonly UnsubscribeFunction _function;
 
     public UnsubscribeFunctionTests()
     {
-        _function = new UnsubscribeFunction(new SubscriberLinkAction(_subscriberStore.Object, _tokenService));
+        _function = new UnsubscribeFunction(new SubscriberLinkAction(_subscriberStore, _tokenService));
     }
 
     [Fact]
     public async Task HandleAsync_WithAValidSignature_SetsTheSubscriberToUnsubscribed()
     {
         var subscriber = new Subscriber(SubscriberId, "reader@example.com", SubscriberStatus.Active);
-        _subscriberStore.Setup(store => store.FindByIdAsync(SubscriberId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(subscriber);
+        _subscriberStore.FindByIdAsync(SubscriberId, Arg.Any<CancellationToken>())
+            .Returns(subscriber);
         var signature = _tokenService.CreateSignature(SubscriberId, TokenPurpose.Unsubscribe);
 
         var response = await _function.HandleAsync(new UnsubscribeRequest(SubscriberId, signature), CancellationToken.None);
 
         response.Success.Should().BeTrue();
-        _subscriberStore.Verify(store => store.UpsertAsync(
-            It.Is<Subscriber>(s => s.Id == SubscriberId && s.Status == SubscriberStatus.Unsubscribed),
-            It.IsAny<CancellationToken>()), Times.Once);
+        await _subscriberStore.Received(1).UpsertAsync(
+            Arg.Is<Subscriber>(s => s.Id == SubscriberId && s.Status == SubscriberStatus.Unsubscribed),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task HandleAsync_UnsubscribingAPendingSubscriber_MovesItStraightToUnsubscribed()
     {
         var subscriber = new Subscriber(SubscriberId, "reader@example.com", SubscriberStatus.Pending);
-        _subscriberStore.Setup(store => store.FindByIdAsync(SubscriberId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(subscriber);
+        _subscriberStore.FindByIdAsync(SubscriberId, Arg.Any<CancellationToken>())
+            .Returns(subscriber);
         var signature = _tokenService.CreateSignature(SubscriberId, TokenPurpose.Unsubscribe);
 
         var response = await _function.HandleAsync(new UnsubscribeRequest(SubscriberId, signature), CancellationToken.None);
 
         response.Success.Should().BeTrue();
-        _subscriberStore.Verify(store => store.UpsertAsync(
-            It.Is<Subscriber>(s => s.Status == SubscriberStatus.Unsubscribed), It.IsAny<CancellationToken>()), Times.Once);
+        await _subscriberStore.Received(1).UpsertAsync(
+            Arg.Is<Subscriber>(s => s.Status == SubscriberStatus.Unsubscribed), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public class UnsubscribeFunctionTests
             new UnsubscribeRequest(SubscriberId, "not-a-real-signature"), CancellationToken.None);
 
         response.Success.Should().BeFalse();
-        _subscriberStore.Verify(store => store.UpsertAsync(It.IsAny<Subscriber>(), It.IsAny<CancellationToken>()), Times.Never);
+        await _subscriberStore.DidNotReceive().UpsertAsync(Arg.Any<Subscriber>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -69,6 +69,6 @@ public class UnsubscribeFunctionTests
             new UnsubscribeRequest(SubscriberId, confirmSignature), CancellationToken.None);
 
         response.Success.Should().BeFalse();
-        _subscriberStore.Verify(store => store.UpsertAsync(It.IsAny<Subscriber>(), It.IsAny<CancellationToken>()), Times.Never);
+        await _subscriberStore.DidNotReceive().UpsertAsync(Arg.Any<Subscriber>(), Arg.Any<CancellationToken>());
     }
 }

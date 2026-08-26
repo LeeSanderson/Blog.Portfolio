@@ -15,8 +15,8 @@ A monorepo hosting a growing portfolio of small example and demo projects for si
 - .NET 10
 - Azure Functions
 - xUnit v3 for testing
-- FluentAssertions for test assertions
-- Moq for mocking
+- AwesomeAssertions for test assertions
+- NSubstitute for mocking
 - StyleCop for code analysis
 - EditorConfig for code style enforcement
 
@@ -71,7 +71,7 @@ This solution uses:
 
 ## Testing
 
-Each app's backend carries its own tests under `apps/{app-name}/backend/tests/` (e.g. `Blog.Portfolio.Apps.Example.Backend.Tests`). Cross-app tests live under `host/tests/` (the route-prefix architecture test) and `aspire/Blog.Portfolio.AppHost.Tests/` (the end-to-end test that starts the real AppHost and calls an app's endpoint over HTTP). xUnit v3, FluentAssertions, and Moq are the established stack; coverlet reports coverage.
+Each app's backend carries its own tests under `apps/{app-name}/backend/tests/` (e.g. `Blog.Portfolio.Apps.Example.Backend.Tests`). Cross-app tests live under `host/tests/` (the route-prefix architecture test) and `aspire/Blog.Portfolio.AppHost.Tests/` (the end-to-end test that starts the real AppHost and calls an app's endpoint over HTTP). xUnit v3, AwesomeAssertions, and NSubstitute are the established stack; coverlet reports coverage.
 
 ## API Endpoints
 
