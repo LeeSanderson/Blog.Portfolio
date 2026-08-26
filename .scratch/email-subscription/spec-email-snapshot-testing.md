@@ -1,6 +1,6 @@
 # EmailSubscription — Extracted Email Builders with HTML Snapshot Tests
 
-Status: ready-for-agent
+Status: done
 
 ## Problem Statement
 
