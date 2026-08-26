@@ -28,7 +28,7 @@ jobs:
       # Temp: Install version 4.13.2 as the latest version (4.14.0) has a bug that prevents installation.
       # See: https://github.com/Azure/azure-functions-core-tools/issues/5569
       - name: Install Azure Functions Core Tools
-        run: npm i --verbose -g azure-functions-core-tools@4.13.2
+        run: npm i --verbose -g azure-functions-core-tools@4.13.2 --unsafe-perm true
 
       - name: Restore
         run: dotnet restore Blog.Portfolio.slnx
