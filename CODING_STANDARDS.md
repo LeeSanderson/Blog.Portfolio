@@ -61,7 +61,7 @@ should be checking for:
   the code genuinely can't say it: an obscure algorithm, a non-obvious
   constraint, or the reasoning behind a decision that would otherwise be
   lost. Never comment *what* the code does — that's what the names are for.
-- **Testing stack** — xUnit + FluentAssertions for assertions + Moq for mocking;
+- **Testing stack** — xUnit v3 + FluentAssertions for assertions + Moq for mocking;
   coverlet for coverage; Verify for snapshot-testing rendered HTML emails. See
   the [`tdd` skill](.claude/skills/tdd/SKILL.md) for what a good test looks like
   on this stack.

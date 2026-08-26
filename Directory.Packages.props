@@ -41,14 +41,14 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
     <PackageVersion Include="System.ServiceModel.Syndication" Version="10.0.0" />
-    <!-- Held at 3.1.2 rather than the current 3.3.1: later releases require Verify 31.24.0+, which is binary
-         incompatible with the frozen Verify.Xunit below and fails at runtime with a MethodAccessException. -->
-    <PackageVersion Include="Verify.DiffPlex" Version="3.1.2" />
-    <!-- Verify.Xunit is the xunit v2 package; Verify.XunitV3 is the v3 one, and this solution is on xunit 2.x.
-         The v2 package is deprecated as "Legacy" and frozen at 31.12.5, so this is its final version — moving
-         off it means migrating the whole solution to xunit v3. See docs/adr/0009-verify-for-email-snapshots.md. -->
-    <PackageVersion Include="Verify.Xunit" Version="31.12.5" />
-    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="Verify.DiffPlex" Version="3.3.1" />
+    <PackageVersion Include="Verify.XunitV3" Version="31.28.0" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <!-- Held on the 3.x line rather than the current 4.0.0 because Verify.XunitV3 31.28.0 is built against
+         xunit.v3.extensibility.core 3.2.2. NuGet treats that as a minimum and would resolve 4.0.0 without
+         complaint, so what this avoids is an untested major pairing rather than a known break — and an
+         incompatible pairing surfaces at runtime, not at build. Move this and Verify.XunitV3 together once
+         Verify ships against 4.x. See docs/adr/0010-xunit-v3-migration.md. -->
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
   </ItemGroup>
 </Project>
