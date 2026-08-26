@@ -28,7 +28,7 @@ jobs:
       # The Aspire integration test (ticket 04) starts a real Functions host via Azure Functions Core
       # Tools, which GitHub-hosted runners don't preinstall.
       - name: Install Azure Functions Core Tools
-        run: npm i -g azure-functions-core-tools@4
+        run: npm i --verbose -g azure-functions-core-tools@4
 
       - name: Restore
         run: dotnet restore Blog.Portfolio.slnx
