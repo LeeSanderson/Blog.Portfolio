@@ -27,12 +27,16 @@ jobs:
 
       # The Aspire integration test (ticket 04) starts a real Functions host via Azure Functions Core
       # Tools, which GitHub-hosted runners don't preinstall.
-      # The registry is pinned because the runner's own npm config rejected an anonymous install of this
-      # public package with E401; `npm config get registry` is kept so a recurrence names the culprit.
+      # The runner carries an npm auth token that the public registry rejects with E401; pinning the
+      # registry alone did not help, so both npm config files are bypassed and this public package
+      # installs anonymously. The probes name the culprit on a recurrence without printing any npmrc
+      # contents, which would leak the token into a public log.
       - name: Install Azure Functions Core Tools
         env:
-          npm_config_registry: https://registry.npmjs.org/
+          NPM_CONFIG_USERCONFIG: /dev/null
+          NPM_CONFIG_GLOBALCONFIG: /dev/null
         run: |
+          test -f ~/.npmrc && echo "user npmrc: $(wc -l < ~/.npmrc) lines (bypassed)" || echo "user npmrc: absent"
           npm config get registry
           npm install -g azure-functions-core-tools@4 --unsafe-perm true
 
