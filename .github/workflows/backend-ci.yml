@@ -27,25 +27,8 @@ jobs:
 
       # The Aspire integration test (ticket 04) starts a real Functions host via Azure Functions Core
       # Tools, which GitHub-hosted runners don't preinstall.
-      # Installed from the GitHub release rather than npm: the runner's npm sends an auth token that the
-      # public registry rejects with E401, and it survives bypassing the user config, the global config
-      # and the registry setting, so the token comes from a config level a workflow can't reach. The
-      # version matches npm's `latest` dist-tag, and the release's own .sha2 is checked because this
-      # pulls a binary into CI over the network.
       - name: Install Azure Functions Core Tools
-        env:
-          CORE_TOOLS_VERSION: "4.14.0"
-        run: |
-          base="https://github.com/Azure/azure-functions-core-tools/releases/download/${CORE_TOOLS_VERSION}"
-          asset="Azure.Functions.Cli.linux-x64.${CORE_TOOLS_VERSION}.zip"
-          curl -sSfL -o /tmp/func.zip "${base}/${asset}"
-          curl -sSfL -o /tmp/func.sha2 "${base}/${asset}.sha2"
-          echo "$(awk '{print $1}' /tmp/func.sha2)  /tmp/func.zip" | sha256sum -c -
-          unzip -q /tmp/func.zip -d "$HOME/func"
-          chmod +x "$HOME/func/func"
-          if [ -f "$HOME/func/gozip" ]; then chmod +x "$HOME/func/gozip"; fi
-          echo "$HOME/func" >> "$GITHUB_PATH"
-          "$HOME/func/func" --version
+        run: npm i -g azure-functions-core-tools@4
 
       - name: Restore
         run: dotnet restore Blog.Portfolio.slnx
