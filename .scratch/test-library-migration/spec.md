@@ -1,9 +1,9 @@
 # Test Library Migration — NSubstitute for mocking, AwesomeAssertions for assertions
 
-Status: needs-triage
+Status: done
 
-Both implementation tickets are delivered. The only outstanding item is ticket 03, a decision ticket that was
-deliberately left unstarted.
+All three tickets are delivered. Ticket 03's decision was to keep the mocks and rename the one test whose name
+described its mechanism — see that ticket for the reasoning.
 
 ## Problem Statement
 
@@ -73,4 +73,4 @@ here:
 
 - **01** — `01-switch-to-awesomeassertions.md` — **done**
 - **02** — `02-migrate-moq-to-nsubstitute.md` (was blocked by 01) — **done**
-- **03** — `03-consider-in-memory-fakes.md` — `needs-triage`, deliberately unstarted
+- **03** — `03-consider-in-memory-fakes.md` — **done**, decided against fakes

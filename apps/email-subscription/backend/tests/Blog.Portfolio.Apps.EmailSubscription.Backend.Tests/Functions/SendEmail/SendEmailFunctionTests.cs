@@ -7,7 +7,7 @@ namespace Blog.Portfolio.Apps.EmailSubscription.Backend.Tests.Functions.SendEmai
 public class SendEmailFunctionTests
 {
     [Fact]
-    public async Task HandleAsync_SendsTheQueuedMessageViaTheEmailSender()
+    public async Task HandleAsync_ForAQueuedMessage_SendsTheEmailToItsRecipient()
     {
         var emailSender = Substitute.For<IEmailSender>();
         var function = new SendEmailFunction(emailSender);
