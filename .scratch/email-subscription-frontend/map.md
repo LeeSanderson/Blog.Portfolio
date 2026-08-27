@@ -41,7 +41,7 @@ constraints on every ticket, not open questions):
 | Seam | This repo owns whole pages *and* the widget bundle, deployed to `/subscribe/` on `leesanderson.github.io` via the existing `_reusable-frontend-deploy.yml` (ADR-0002) |
 | Stack | Lit + Vite + Vitest/happy-dom; npm enters the monorepo as dev tooling |
 | Widget state | Four states in `localStorage`. Opt-out is permanent; dismissal ages out. *The placeholder names chosen here were replaced by `submitted`/`confirmed`/`optedOut`/`dismissed` — see [Name the reader's local subscription state](issues/01-name-the-readers-local-state.md)* |
-| Surfaces | `/subscribe/`, `/subscribe/confirm/`, `/subscribe/unsubscribe/`, `/subscribe/widget.js`; one shared form component |
+| Surfaces | `/subscribe/`, `/subscribe/confirm/`, `/subscribe/unsubscribe/`, `/subscribe/widget.js`; one shared form component. *That component mounts on **two** surfaces, not four: the widget and `/subscribe/`. Neither landing page carries the form in any state, and `/subscribe/` never suppresses itself the way the widget does — see [Prototype the three subscription pages](issues/06-prototype-the-subscription-pages.md)* |
 | Local dev | An Aspire resource so `./run-local.ps1` runs the whole stack; `npm run dev` still works standalone. *The call is `AddViteApp` from `Aspire.Hosting.JavaScript` — `AddNpmApp`/`Aspire.Hosting.NodeJs` named here at charting do not exist at 13.4.6. And the resource does **not** fail to start in CI: Aspire 13 installs the dependencies instead, which is a quieter problem, not accepted noise — see [Aspire hosting for the Vite dev server](issues/05-aspire-vite-dev-server.md)* |
 | Local email | Real Resend sends, gated on verifying the sending domain |
 | API URL | Repo variable `API_BASE_URL` + a new generic `build-env` input on the reusable workflow; Vite bakes `VITE_API_BASE_URL` |
@@ -71,6 +71,21 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   an imported stylesheet becomes a `dist/widget.css` a bare `<script>` never fetches. None raises a
   warning. The only proposed guard is a CI assertion on `dist/widget.js`, now part of
   [Frontend CI and the build-env channel](issues/07-frontend-ci-and-build-env.md).
+- A **fourth** in the build, and the first one that breaks the shape, from
+  [Prototype the three subscription pages](issues/06-prototype-the-subscription-pages.md): the pages
+  deploy into a subdirectory, so `base` must be `/subscribe/`, and Vite then prefixes `base` onto
+  every root-absolute reference it can see — so `<script src="/js/header.js">` silently becomes
+  `/subscribe/js/header.js` and can never reach the blog's live header. Named here because it is the
+  one case that **fails the build loudly** when there is no copy to find (`Failed to resolve
+  /js/header.js`), which is why the chosen mechanism is a fully-qualified URL: it cannot ship broken.
+- **Rotating `SigningKey` invalidates every confirm and unsubscribe link ever sent, all at once.**
+  Surfaced while resolving
+  [Prototype the three subscription pages](issues/06-prototype-the-subscription-pages.md). The links
+  never expire by design (ADR-0007), so the signing key is the only thing that can invalidate them,
+  and it invalidates all of them together. A human escape hatch was weighed — making the canonical
+  from-address a monitored mailbox — and **declined**: the from-addresses are `noreply@` and
+  `updates@` and the blog carries no contact address, so the failure page offers retry guidance only.
+  Accepted risk: someone whose unsubscribe link is dead has no route out but marking the mail as spam.
 
 ## Decisions so far
 
@@ -116,21 +131,26 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   The API URL reaches the dev server only via an explicit
   `WithEnvironment("VITE_API_BASE_URL", host.GetEndpoint("http"))` — service-discovery vars are
   unprefixed and never reach client code. `WithExplicitStart()` was checked and does not help.
+- [Prototype the three subscription pages](issues/06-prototype-the-subscription-pages.md) — the pages
+  wear the blog's **full chrome** (variant B, `search.html`'s shell), loading `six-sided-header`/
+  `footer` by **fully-qualified URL**: `base` must be `/subscribe/` and Vite rewrites every
+  root-absolute reference, so a same-origin tag can never reach the blog's live header, and a
+  `public/` copy is ship-copies in disguise. **Both landing pages require a click** rather than firing
+  on load — the only configuration with no silently-wrong outcome, and the one that keeps ADR-0007's
+  stated `GET` safety property true rather than merely assumed. The pages **write the Signup Record**
+  (confirm → `confirmed`, unsubscribe → `optedOut`), which gives `optedOut` its only writer and stops
+  the widget telling a reader who just confirmed that it is still waiting. `?id=&sig=` is **left in
+  the address bar** — the token is permanent, so stripping revokes nothing and a refresh before
+  clicking would strand the reader. Full copy for all 15 states is on the ticket; `offline` is kept
+  distinct from `failure` throughout, and **no page ever says a link expired**, because links never do.
 
 ## Not yet specified
 
-- **Error and empty states on the three pages, and their copy.** What the confirm page shows for a
-  bad or tampered signature, and what either landing page shows when the API is unreachable. The
-  widget's half of this is settled in
-  [Prototype the article widget](issues/02-prototype-the-article-widget.md); the pages' half takes
-  shape once [Prototype the three subscription pages](issues/06-prototype-the-subscription-pages.md)
-  exists.
-- **The three pages' accessibility**, in particular what they show with JavaScript disabled. The
-  widget's half graduated to
-  [The widget's accessibility bar](issues/09-widget-accessibility-bar.md); the pages' half waits on
-  their prototype.
 - **Keeping the vendored Bootstrap Darkly copy honest.** How the copied CSS stays in step
-  with the blog, and what would signal that it has drifted.
+  with the blog, and what would signal that it has drifted. Narrowed by
+  [Prototype the three subscription pages](issues/06-prototype-the-subscription-pages.md): the
+  header and footer are **not** vendored — they load live from `www.sixsideddice.com/js/`, so they
+  cannot drift. This is now about the CSS alone.
 - **Analytics.** Whether subscribe/confirm/dismiss feed the blog's existing Google Analytics
   tag, and whether that is wanted at all.
 
