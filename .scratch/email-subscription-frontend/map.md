@@ -40,12 +40,12 @@ constraints on every ticket, not open questions):
 |---|---|
 | Seam | This repo owns whole pages *and* the widget bundle, deployed to `/subscribe/` on `leesanderson.github.io` via the existing `_reusable-frontend-deploy.yml` (ADR-0002) |
 | Stack | Lit + Vite + Vitest/happy-dom; npm enters the monorepo as dev tooling |
-| Widget state | Four states in `localStorage`: pending / subscribed / unsubscribed / dismissed. Opt-out is permanent; dismissal ages out |
+| Widget state | Four states in `localStorage`. Opt-out is permanent; dismissal ages out. *The placeholder names chosen here were replaced by `submitted`/`confirmed`/`optedOut`/`dismissed` — see [Name the reader's local subscription state](issues/01-name-the-readers-local-state.md)* |
 | Surfaces | `/subscribe/`, `/subscribe/confirm/`, `/subscribe/unsubscribe/`, `/subscribe/widget.js`; one shared form component |
 | Local dev | Aspire `AddNpmApp` resource so `./run-local.ps1` runs the whole stack; the resource failing to start in CI is accepted noise; `npm run dev` still works standalone |
 | Local email | Real Resend sends, gated on verifying the sending domain |
 | API URL | Repo variable `API_BASE_URL` + a new generic `build-env` input on the reusable workflow; Vite bakes `VITE_API_BASE_URL` |
-| Testing | Vitest + happy-dom, no browsers. Scroll trigger sits behind a pure `shouldPrompt()` seam because happy-dom has no layout engine |
+| Testing | Vitest + happy-dom, no browsers. *The scroll-trigger seam this row called for is moot — there is no scroll trigger; see [Prototype the article widget](issues/02-prototype-the-article-widget.md). The layout dependency moved to the anchor rule instead, and where the seam goes now is [Testing the anchor rule without a layout engine](issues/11-testing-the-anchor-rule.md)* |
 | Styling | Light-DOM Lit following the `six-sided-*` precedent, inheriting Bootstrap Darkly; `bootstrapdarkly.min.css` + `site.css` vendored for the pages and local dev |
 | Blog contract | One `<script type="module">` line in the BlogToHtml post template; the widget self-injects |
 
@@ -58,6 +58,11 @@ Two edges named at charting rather than buried:
 - Light DOM buys a native look at the price of coupling: a Bootstrap upgrade or a `site.css`
   edit on the blog can restyle or break the widget with no signal in this repo, and no test
   here will catch it.
+- The same shape, in markup rather than styling, named while resolving
+  [Prototype the article widget](issues/02-prototype-the-article-widget.md): the widget's anchor rule
+  reads BlogToHtml's `data-pagefind-body` wrapper and the article's heading markup to place itself.
+  A template change in `C:/Dev/Personal/Blog` can silently move the widget, or stop it appearing at
+  all, with no signal here and no test that would catch it.
 
 ## Decisions so far
 
@@ -70,21 +75,30 @@ Two edges named at charting rather than buried:
   `dismissed` ages out at 30 days and `submitted` at 7, `confirmed`/`optedOut` never, as build-time
   constants; both edge cases accepted, with an "I'm already subscribed" control mitigating
   per-browser state.
+- [Prototype the article widget](issues/02-prototype-the-article-widget.md) — a **mid-article
+  interstitial** wins, anchored before the `h2`–`h6` nearest the article's vertical midpoint (never
+  `h1`; end of `<main>` when an article has no headings, as two K8s posts do). **No scroll trigger** —
+  it is inserted at load and the reader scrolls into it, which deleted the trigger question and left
+  the seam as `promptDecision(record)`; "Not now" and an always-visible "I'm already subscribed"
+  collapse the block in place over 200ms, the only motion in the widget; copy is the widget's own and
+  never echoes the API's deliberately-hedged `message`.
 
 ## Not yet specified
 
-- **Error, empty and offline states, and their copy.** What the form says when the API is
-  unreachable, when it returns a non-200, and what the confirm page shows for a bad or
-  tampered signature. Takes shape once the prototypes exist.
-- **Accessibility bar.** Focus management, `aria-live` on the result messages, honouring
-  `prefers-reduced-motion`, and what the landing pages show with JavaScript disabled. Its
-  shape depends on which widget presentation wins.
+- **Error and empty states on the three pages, and their copy.** What the confirm page shows for a
+  bad or tampered signature, and what either landing page shows when the API is unreachable. The
+  widget's half of this is settled in
+  [Prototype the article widget](issues/02-prototype-the-article-widget.md); the pages' half takes
+  shape once [Prototype the three subscription pages](issues/06-prototype-the-subscription-pages.md)
+  exists.
+- **The three pages' accessibility**, in particular what they show with JavaScript disabled. The
+  widget's half graduated to
+  [The widget's accessibility bar](issues/09-widget-accessibility-bar.md); the pages' half waits on
+  their prototype.
 - **Keeping the vendored Bootstrap Darkly copy honest.** How the copied CSS stays in step
   with the blog, and what would signal that it has drifted.
 - **Analytics.** Whether subscribe/confirm/dismiss feed the blog's existing Google Analytics
   tag, and whether that is wanted at all.
-- **Non-article pages.** What the widget does if the script is ever loaded somewhere without
-  an article to anchor to.
 
 ## Out of scope
 
