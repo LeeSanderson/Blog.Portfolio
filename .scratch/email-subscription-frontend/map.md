@@ -63,6 +63,14 @@ Two edges named at charting rather than buried:
 
 <!-- one line per closed ticket: gist + link -->
 
+- [Name the reader's local subscription state](issues/01-name-the-readers-local-state.md) — the
+  browser-local concept is a **Signup Record** (now in `CONTEXT.md`), stated as
+  `submitted`/`confirmed`/`optedOut`/`dismissed` so it shares no word with the Subscriber; stored at
+  `six-sided.signup` as `{v, state, at}` with no email, anything unrecognised treated as no record;
+  `dismissed` ages out at 30 days and `submitted` at 7, `confirmed`/`optedOut` never, as build-time
+  constants; both edge cases accepted, with an "I'm already subscribed" control mitigating
+  per-browser state.
+
 ## Not yet specified
 
 - **Error, empty and offline states, and their copy.** What the form says when the API is
@@ -91,3 +99,7 @@ Two edges named at charting rather than buried:
 - **A re-subscribe affordance on the unsubscribe page.** Re-asks someone who just opted out.
 - **Any change to the backend's subscribe/confirm/unsubscribe contract.** The frontend is
   built against it as it stands.
+- **The apex domain's broken HTTPS.** Surfaced while resolving
+  [Name the reader's local subscription state](issues/01-name-the-readers-local-state.md):
+  `http://sixsideddice.com` 301s to `www`, but `https://sixsideddice.com` fails TLS, and the backend's
+  CORS allowlist includes that effectively-dead origin. Blog infrastructure, not this effort.

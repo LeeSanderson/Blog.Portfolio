@@ -18,6 +18,10 @@ _Avoid_: API, Function App (that term names the Azure resource; Host names the p
 A person who wants to be emailed about new sixsideddice.com blog posts, identified by email address. Moves through three states: Pending (submitted, not yet confirmed) → Active (confirmed, receives the weekly digest) → Unsubscribed (opted out). Confirming and unsubscribing are unconditional, idempotent writes — whichever action was performed most recently wins, regardless of the Subscriber's prior state (e.g. clicking an old confirm link after already unsubscribing moves them back to Active; there is no guard requiring Pending before confirming).
 _Avoid_: Subscription, Contact, User
 
+**Signup Record**:
+A browser-local note of how a reader last dealt with the signup prompt in this browser — `submitted`, `confirmed`, `optedOut` or `dismissed`. It is a guess about the Subscriber, never a fact: it may say `confirmed` where no Subscriber exists, and an Active Subscriber may have no Signup Record at all.
+_Avoid_: local subscriber, subscription state, subscriber cache
+
 **Digest**:
 The email that lists new sixsideddice.com blog posts, rendered from whatever set of posts it is handed. Its cadence is a separate concern: the seven-day window and the Monday 08:00 UTC send belong to the timer that triggers it, which is why `DigestEmailBuilder` renders the email while `WeeklyDigestFunction` decides when one goes out.
 _Avoid_: Weekly digest (as a name for the email itself), Newsletter, Roundup

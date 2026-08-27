@@ -25,9 +25,14 @@ Settle:
   from the end, or an element coming into view — and what `shouldPrompt(state, position)` takes
   as arguments so it stays a pure, unit-testable function with the observer wiring left trivially thin.
 - **Copy.** What the prompt says, what the success state says after submitting, and what a reader
-  mid-flow (`pending`) sees instead of the prompt.
+  mid-flow (`submitted`) sees instead of the prompt.
 - **Dismissal.** Whether there is a visible dismiss control, what it looks like, and whether
   dismissing is distinguishable from ignoring.
+- **The "I'm already subscribed" control.** Settled in
+  [Name the reader's local subscription state](01-name-the-readers-local-state.md) as the mitigation
+  for per-browser state: it writes a `confirmed` Signup Record locally and never calls the server.
+  This ticket decides whether it is always visible, revealed only on a repeat prompt, or folded into
+  the dismiss control — and what it says.
 - **Motion.** Whether it animates in at all, and what `prefers-reduced-motion` does.
 
 Link the prototype from this ticket as an asset rather than pasting it in. Use `/prototype`.
