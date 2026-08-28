@@ -186,6 +186,12 @@ dedicated control, and the alternative makes every reader parse a conditional to
 | Error | That didn't go through. Check your connection and try again. |
 | Collapsed after "Not now" | No problem — we won't ask again for a while. |
 | Collapsed after "I'm already subscribed" | Thanks — we won't ask again in this browser. |
+| Invalid email | That doesn't look like an email address. |
+
+The invalid-email row was added by [The widget's accessibility bar](09-widget-accessibility-bar.md).
+This table had no row for a malformed address because the prototype leaned on native constraint
+validation; ticket 09 chose `novalidate` and routed the message through the widget's own status
+region, so the copy is ours to write.
 
 Two choices worth their reasoning. The heading states the offer flatly rather than warmly, because
 a scanning reader reads only the heading and warmth belongs in the body line. The success message

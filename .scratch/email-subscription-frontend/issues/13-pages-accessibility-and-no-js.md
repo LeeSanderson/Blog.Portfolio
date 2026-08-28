@@ -16,6 +16,17 @@ Scope is the **three standalone pages only**. The widget's half is
 [The widget's accessibility bar](09-widget-accessibility-bar.md); the two share vocabulary but not
 answers, because the pages own their whole document where the widget is a guest in someone else's.
 
+**The shared form is no longer this ticket's to decide.** Ticket 06 settled that one component mounts
+on both the widget and `/subscribe/`, so ticket 09's answers bind here too and are not reopened:
+`novalidate` with `aria-invalid` on the input, a single always-present polite `role="status"` region
+for `Sending…`/network error/invalid email, `<input type="text" name="website" hidden
+autocomplete="off">` for the honeypot, the `six-sided-signup-` id namespace, `aria-disabled` plus a
+handler guard rather than `disabled` while a request is in flight, and focus moving to a
+`tabindex="-1"` replacement — with `preventScroll`, on click rather than `transitionend` — whenever a
+swap destroys the control the reader was standing in.
+
+What is left for this ticket is what the *pages* own.
+
 **With JavaScript off, all three pages are currently blank.** Every one of ticket 06's decisions
 pushed in the same direction, and the sum was not weighed at the time:
 
@@ -39,13 +50,15 @@ Settle:
   token, so it is the cheapest thing to render statically — and it is also the state a reader who
   lands bare is most likely to hit.
 - **The result region.** `awaitingClick` → `working` → `success`/`failure`/`offline` replaces the
-  page's main content three times. Whether that region is `aria-live="polite"`, `role="status"`, or
-  `role="alert"` for the failure and offline states, and whether the `working` state announces at all
-  or is noise.
-- **Focus after the action.** The button the reader just pressed is destroyed by the swap. Where
-  focus lands — the new heading, the result region, or nowhere — and whether the answer differs from
-  [The widget's accessibility bar](09-widget-accessibility-bar.md)'s, given these pages own their
-  whole document and the widget does not.
+  page's main content three times. This is the *page's* swap, not the form's — the form's region is
+  settled — and it differs in kind: a whole document's main content changes, and `failure`/`offline`
+  report an outcome the reader cannot retry their way out of. Whether it takes the same single polite
+  `role="status"`, and whether `working` announces at all or is noise.
+- **Focus after the action.** The button the reader just pressed is destroyed by the swap. Ticket 09
+  answered this for the widget — the replacement takes `tabindex="-1"` and is focused, announced once
+  by the focus move — but these pages own their whole document, so the new `h1` is a candidate the
+  widget never had. Whether the answer differs, and why, given a divergence has to be justified now
+  rather than assumed.
 - **Heading levels and landmarks.** Each page has exactly one `h1` inside the `main` that chrome B
   supplies, and the header/footer arrive asynchronously from a different origin. What the outline
   looks like before they land, and whether the late-arriving `<header>`/`<footer>` landmarks cause a

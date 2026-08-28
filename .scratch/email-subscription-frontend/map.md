@@ -58,7 +58,15 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   file-drop `IEmailSender` fallback is not needed.
 - Light DOM buys a native look at the price of coupling: a Bootstrap upgrade or a `site.css`
   edit on the blog can restyle or break the widget with no signal in this repo, and no test
-  here will catch it.
+  here will catch it. **Sharpened by
+  [The widget's accessibility bar](issues/09-widget-accessibility-bar.md): the coupling is no longer
+  only cosmetic.** The widget ships no CSS, so two of its accessibility decisions now rest on classes
+  the blog owns — `.sr-only` hides the heading in the collapsed state (drop it and the collapse
+  budget doubles from one line to two), and `.btn.disabled` is the entire visual of the in-flight
+  state. Same shape as ever: silently wrong in the reader's browser, no signal here. The honeypot is
+  the one place the dependency was deliberately refused, by hiding with the `hidden` attribute rather
+  than a class — because there the failure is not cosmetic but a reader told they subscribed when
+  they did not.
 - The same shape, in markup rather than styling, named while resolving
   [Prototype the article widget](issues/02-prototype-the-article-widget.md): the widget's anchor rule
   reads BlogToHtml's `data-pagefind-body` wrapper and the article's heading markup to place itself.
@@ -166,6 +174,24 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   verified to exist at 13.4.6) — a backend ping test has no dependency on a Vite dev server, and Aspire
   runs `npm install`, not `ci`, so the leak could mutate the lockfile invisibly in CI. Action-version
   sweep across the whole repo is **one line**: `backend-cd.yml`'s `checkout@v4` → `@v7`.
+- [The widget's accessibility bar](issues/09-widget-accessibility-bar.md) — the widget is an
+  **`<aside>` named by its own heading**, giving one keystroke past the promo on every post, with a
+  **fixed `h2`**: the anchor rule was measured across all 27 articles (`h2` on 16, `h3` on 8, `h4` on 1,
+  no heading on 2), so a fixed level skips on **9 of 25** — accepted, because skipping is axe
+  best-practice and not a WCAG failure, and the `aside` bounds the false nesting. **One always-present
+  polite `role="status"`** carries `Sending…`, network errors and invalid email; nothing is assertive,
+  because every message answers a button just pressed. `pendingNote` is *not* a live message — it
+  renders at load. **One focus rule covers all three destroying actions** (success, "Not now", "I'm
+  already subscribed"): a `tabindex="-1"` replacement focused with `preventScroll`, announced once by
+  the focus move and never also a live region — and moved **on click, not `transitionend`**, which under
+  `prefers-reduced-motion` never fires. Both prototypes' `button.disabled` is replaced by
+  **`aria-disabled` + a handler guard**, because disabling the focused element drops focus to `<body>`
+  and the *error* path never repairs it. The honeypot becomes **`hidden`**, not off-screen — the widget
+  ships no CSS, so hiding must travel with the markup. Two questions the ticket never listed were
+  surfaced and settled: **ids are namespaced `six-sided-signup-`** (BlogToHtml slugifies headings into
+  the same id space, and a collision silently unlabels the input), and invalid input uses
+  **`novalidate` through the same status region**, adding one row to ticket 02's copy table.
+  `prefers-reduced-motion` confirmed as one branch.
 
 ## Not yet specified
 
