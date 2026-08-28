@@ -26,9 +26,19 @@ Produce:
   ADR-0002 does not cover it (0002 chose direct-push with no PR gate; it names no workflow file, so it
   needs no amendment). Per the standing bar, each new tool gets an ADR even where it is
   cheaply reversible — decide whether that is one "frontend tooling stack" ADR or several, and
-  write them into `docs/adr/` continuing from `0012`. The Vite ADR has to carry the build-shape and
-  version decision from
-  [Choosing the Vite build shape to commit to](12-vite-build-shape-decision.md); note also that
+  write them into `docs/adr/` continuing from `0012`.
+
+  **Partly settled by [Choosing the Vite build shape to
+  commit to](12-vite-build-shape-decision.md), so do not re-litigate it.** One of those ADRs is fixed:
+  *npm and Vite enter the monorepo*, carrying npm itself, the exact pins (`vite 8.2.2`, `lit 3.3.3`,
+  `vitest 4.1.11`, `happy-dom 20.11.8`), Shape A with its RC-Environment-API and `consumer: 'client'`
+  exposure, `scripts/verify-dist.mjs` as the mitigation for both that and the widget pass's
+  `codeSplitting: false`, and Vitest + happy-dom. They are one ADR because the next Vite major tests all
+  of them at once. **Lit-in-light-DOM is explicitly excluded from it** on the different-drivers test that
+  ADR-0011 and ADR-0012 used — Lit is swappable without touching the build and the build is bumpable
+  without touching Lit — so it needs its own. Still open for this ticket: where
+  `Aspire.Hosting.JavaScript` lands (its revisit trigger is the Aspire major, not the Vite one, and it
+  arguably just applies ADR-0004), and the composite-actions ADR above. Note also that
   `Aspire.Hosting.NodeJs`, named at charting, was renamed and is dead — the ADR should record the
   package that exists, not the one the map first guessed at.
 - **`CONTEXT.md`.** Carry in the vocabulary settled by

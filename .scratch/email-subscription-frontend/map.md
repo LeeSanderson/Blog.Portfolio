@@ -39,7 +39,7 @@ constraints on every ticket, not open questions):
 | | Decision |
 |---|---|
 | Seam | This repo owns whole pages *and* the widget bundle, deployed to `/subscribe/` on `leesanderson.github.io` via the existing `_reusable-frontend-deploy.yml` (ADR-0002). *That reusable workflow is **deleted**, along with `.github/workflows/templates/`: the seam is re-cut as two composite actions (`publish-to-pages`, `smoke-test-api`) called from a per-app one-job workflow, so each app owns its own install/build/test — see [Frontend CI and the build-env channel](issues/07-frontend-ci-and-build-env.md)* |
-| Stack | Lit + Vite + Vitest/happy-dom; npm enters the monorepo as dev tooling |
+| Stack | Lit + Vite + Vitest/happy-dom; npm enters the monorepo as dev tooling. *Pinned exactly, no carets — `vite 8.2.2`, `lit 3.3.3`, `vitest 4.1.11`, `happy-dom 20.11.8` — built as **one** `vite.config.js` with two environments, and recorded in **one** ADR. This ticket's premise that the Environment API forces Vite 8 was false, and uncoupling shape from major flipped the major's sign — see [Choosing the Vite build shape to commit to](issues/12-vite-build-shape-decision.md)* |
 | Widget state | Four states in `localStorage`. Opt-out is permanent; dismissal ages out. *The placeholder names chosen here were replaced by `submitted`/`confirmed`/`optedOut`/`dismissed` — see [Name the reader's local subscription state](issues/01-name-the-readers-local-state.md)* |
 | Surfaces | `/subscribe/`, `/subscribe/confirm/`, `/subscribe/unsubscribe/`, `/subscribe/widget.js`; one shared form component. *That component mounts on **two** surfaces, not four: the widget and `/subscribe/`. Neither landing page carries the form in any state, and `/subscribe/` never suppresses itself the way the widget does — see [Prototype the three subscription pages](issues/06-prototype-the-subscription-pages.md)* |
 | Local dev | An Aspire resource so `./run-local.ps1` runs the whole stack; `npm run dev` still works standalone. *The call is `AddViteApp` from `Aspire.Hosting.JavaScript` — `AddNpmApp`/`Aspire.Hosting.NodeJs` named here at charting do not exist at 13.4.6. And the resource does **not** fail to start in CI: Aspire 13 installs the dependencies instead, which is a quieter problem, not accepted noise — see [Aspire hosting for the Vite dev server](issues/05-aspire-vite-dev-server.md)* |
@@ -93,6 +93,18 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   an imported stylesheet becomes a `dist/widget.css` a bare `<script>` never fetches. None raises a
   warning. The only proposed guard is a CI assertion on `dist/widget.js`, now part of
   [Frontend CI and the build-env channel](issues/07-frontend-ci-and-build-env.md).
+  ~~One more in the same family — never numbered, because it was removed before it could join the count.
+  Visible only by putting that ticket's measurement beside ticket 07's four assertions, and found while
+  resolving [Choosing the Vite build shape to
+  commit to](issues/12-vite-build-shape-decision.md): a dynamic `import()` in the widget entry emits a
+  second hashed chunk, and **no assertion catches it** — the emitted specifier is relative, so the
+  no-bare-imports check passes, and `widget.js` still exists, still carries the origin, still emits no
+  CSS. The chunk publishes and every article 404s chasing it. The first one in this family to originate
+  *here* rather than in another repo, triggered by someone lazy-loading to trim the bundle.~~
+  **Deleted, not accepted:** `codeSplitting: false` on the single-entry widget pass inlines the import
+  instead of splitting it, so the failure cannot occur. The second member of this family the map has
+  removed rather than documented, after ticket 11's `offsetTop` coupling — and the first removed from
+  the *build* family, where every other member is merely guarded.
 - A **fourth** in the build, and the first one that breaks the shape, from
   [Prototype the three subscription pages](issues/06-prototype-the-subscription-pages.md): the pages
   deploy into a subdirectory, so `base` must be `/subscribe/`, and Vite then prefixes `base` onto
@@ -243,6 +255,26 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   must not use. The browser-test trade **stands**; markup drift is **accepted with no signal**, mitigated
   by a spec-documented contract whose third clause — *do not add `async`* — is what keeps the otherwise
   unreachable `readyState` branch.
+- [Choosing the Vite build shape to commit to](issues/12-vite-build-shape-decision.md) — **Shape A** on
+  **Vite 8.2.2**, exact pins, one ADR, one extra config line. The ticket's premise was **false**: Shape A
+  was measured on Vite 7.3.6 *and* 8.2.2, so shape and major are independent — and uncoupling them flipped
+  the major's sign, because depending on an RC API argues for the *newest* major, not the oldest (ADR-0012
+  already ruled against superseded major lines). Shape A survives its RC dependency **structurally**, not
+  luckily: the Environment API's only job here is to produce the second file, so its failure domain and
+  `verify-dist.mjs`'s inspection domain are the same set — `buildApp` unhonoured → no `widget.js` →
+  assertion 1; `consumer` renamed → Lit external → assertion 4. Two shapes the ticket never listed were
+  weighed: **B′** (`mergeConfig` + `--config`, which dissolves B's shared-settings cost) is kept as the
+  **named fallback**, and **D** (`process.env` switch) rejected because inline env vars in npm scripts
+  need `cross-env` on Windows. **Exact pins** because this is the repo's first `package.json` and sets the
+  convention — `npm ci` reads the lockfile either way, so what pins buy is a Vite bump being a one-line
+  diff someone reads rather than a lockfile diff nobody does, at exactly the moment the guard is trusted
+  to catch something no docs page warned about. **One ADR** ("npm and Vite enter the monorepo") because
+  the next Vite major tests the shape, the flag, the pins and Vitest's range simultaneously — one driver,
+  one revisit trigger — with Shape A *inside* it, since `consumer: 'client'` reads as boilerplate and
+  nothing else would record why the guard's fourth assertion exists. Lit-in-light-DOM deliberately
+  excluded on the different-drivers test. Three residues for the spec: `vite dev` is **unverified** under
+  Shape A (a cost, not a risk — it fails loudly and locally, and B′ is already specified), `build.target`
+  is set explicitly rather than inherited, and Node's floor is stated as `^20.19 || >=22.12`.
 
 ## Not yet specified
 
