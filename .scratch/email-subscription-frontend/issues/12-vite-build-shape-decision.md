@@ -39,3 +39,14 @@ that builds clean and talks to nowhere, which argues for whichever shape is easi
 This is a decision, not more reading. The facts are all in
 `.scratch/email-subscription-frontend/research/04-vite-build-shape.md` on branch
 `research/04-vite-build-shape`.
+
+**Amended by [Frontend CI and the build-env channel](07-frontend-ci-and-build-env.md).** This ticket's
+last paragraph argued for "whichever shape is easiest to guard in CI" — that guard is now settled, and
+it changes the calculus rather than just informing it. A four-assertion `postbuild` script
+(`scripts/verify-dist.mjs`) runs on every `npm run build`, in CI *and* on a developer's laptop, and it
+is **shape-independent**: it asserts on `dist/`, not on how `dist/` was produced. One of its four
+assertions — no surviving bare-specifier imports (`from "lit"`) — is precisely the failure mode of
+Option A's undocumented `consumer: 'client'` requirement, which built a 1.08 kB widget with Lit left
+external. So **Option A's quiet-breakage-on-upgrade risk is no longer quiet**: it fails the build
+loudly, at the moment of the upgrade, in this repo. That was the main argument for the duller Option B,
+and it is substantially weaker now. The Vite-major half of the decision is untouched.

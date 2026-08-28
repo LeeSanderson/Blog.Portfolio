@@ -38,13 +38,13 @@ constraints on every ticket, not open questions):
 
 | | Decision |
 |---|---|
-| Seam | This repo owns whole pages *and* the widget bundle, deployed to `/subscribe/` on `leesanderson.github.io` via the existing `_reusable-frontend-deploy.yml` (ADR-0002) |
+| Seam | This repo owns whole pages *and* the widget bundle, deployed to `/subscribe/` on `leesanderson.github.io` via the existing `_reusable-frontend-deploy.yml` (ADR-0002). *That reusable workflow is **deleted**, along with `.github/workflows/templates/`: the seam is re-cut as two composite actions (`publish-to-pages`, `smoke-test-api`) called from a per-app one-job workflow, so each app owns its own install/build/test — see [Frontend CI and the build-env channel](issues/07-frontend-ci-and-build-env.md)* |
 | Stack | Lit + Vite + Vitest/happy-dom; npm enters the monorepo as dev tooling |
 | Widget state | Four states in `localStorage`. Opt-out is permanent; dismissal ages out. *The placeholder names chosen here were replaced by `submitted`/`confirmed`/`optedOut`/`dismissed` — see [Name the reader's local subscription state](issues/01-name-the-readers-local-state.md)* |
 | Surfaces | `/subscribe/`, `/subscribe/confirm/`, `/subscribe/unsubscribe/`, `/subscribe/widget.js`; one shared form component. *That component mounts on **two** surfaces, not four: the widget and `/subscribe/`. Neither landing page carries the form in any state, and `/subscribe/` never suppresses itself the way the widget does — see [Prototype the three subscription pages](issues/06-prototype-the-subscription-pages.md)* |
 | Local dev | An Aspire resource so `./run-local.ps1` runs the whole stack; `npm run dev` still works standalone. *The call is `AddViteApp` from `Aspire.Hosting.JavaScript` — `AddNpmApp`/`Aspire.Hosting.NodeJs` named here at charting do not exist at 13.4.6. And the resource does **not** fail to start in CI: Aspire 13 installs the dependencies instead, which is a quieter problem, not accepted noise — see [Aspire hosting for the Vite dev server](issues/05-aspire-vite-dev-server.md)* |
 | Local email | Real Resend sends, gated on verifying the sending domain |
-| API URL | Repo variable `API_BASE_URL` + a new generic `build-env` input on the reusable workflow; Vite bakes `VITE_API_BASE_URL` |
+| API URL | Repo variable `API_BASE_URL` + a new generic `build-env` input on the reusable workflow; Vite bakes `VITE_API_BASE_URL`. *The `build-env` input was **dissolved, not designed**: with the app owning its own build there is no generic channel — the build step just sets `env: VITE_API_BASE_URL: ${{ vars.API_BASE_URL }}`. The variable holds the **full origin**, not the bare hostname — see [Frontend CI and the build-env channel](issues/07-frontend-ci-and-build-env.md)* |
 | Testing | Vitest + happy-dom, no browsers. *The scroll-trigger seam this row called for is moot — there is no scroll trigger; see [Prototype the article widget](issues/02-prototype-the-article-widget.md). The layout dependency moved to the anchor rule instead, and where the seam goes now is [Testing the anchor rule without a layout engine](issues/11-testing-the-anchor-rule.md)* |
 | Styling | Light-DOM Lit following the `six-sided-*` precedent, inheriting Bootstrap Darkly; `bootstrapdarkly.min.css` + `site.css` vendored for the pages and local dev |
 | Blog contract | One `<script type="module">` line in the BlogToHtml post template; the widget self-injects |
@@ -86,6 +86,12 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   from-address a monitored mailbox — and **declined**: the from-addresses are `noreply@` and
   `updates@` and the blog carries no contact address, so the failure page offers retry guidance only.
   Accepted risk: someone whose unsubscribe link is dead has no route out but marking the mail as spam.
+- The **second** one to break the shape, from
+  [Frontend CI and the build-env channel](issues/07-frontend-ci-and-build-env.md): the deploy's push to
+  `leesanderson.github.io` can fail non-fast-forward if a human pushes to the blog between our checkout
+  and our push — the `pages-deploy` concurrency group only serialises deploys from *this* repo. It fails
+  **loudly** and leaves nothing half-broken, since the push either happened or it did not, which is why
+  the chosen answer is to fail rather than rebase-and-retry, with `workflow_dispatch` as the retry.
 
 ## Decisions so far
 
@@ -143,14 +149,26 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   the address bar** — the token is permanent, so stripping revokes nothing and a refresh before
   clicking would strand the reader. Full copy for all 15 states is on the ticket; `offline` is kept
   distinct from `failure` throughout, and **no page ever says a link expired**, because links never do.
+- [Frontend CI and the build-env channel](issues/07-frontend-ci-and-build-env.md) — the `build-env`
+  question was **dissolved, not answered**: readability drove the seam to be re-cut so each app owns its
+  own install/build/test, and then there is no generic channel to design. `_reusable-frontend-deploy.yml`
+  (zero real callers) **and** `.github/workflows/templates/` are deleted, replaced by two composite
+  actions — `publish-to-pages` and `smoke-test-api` — called from a **single linear job**, because a
+  composite runs in the calling job and any two-job shape rebuilds, meaning *the bytes that ship were
+  never the bytes tested*. `API_BASE_URL` is a repo **variable** holding the **full origin** (public by
+  construction; masking would destroy the only cheap diagnostic). The staleness premise was **wrong** —
+  `uniqueString` is deterministic, so recreating the azd env under the same name/subscription/location
+  keeps the same hostname — leaving two distinct failures with one check each: the frontend's pre-publish
+  ping (typo, dead app) and a `backend-cd.yml` hostname comparison (env genuinely renamed). The widget
+  guard is a **four-assertion `postbuild` script**, not a CI step, covering all three of ticket 04's traps
+  plus its undocumented `consumer: 'client'` one, and doubling as the loud failure for an unset variable.
+  Aspire's npm-install leak is cut by **removing the `frontend` resource in the E2E test** (`Resources`
+  verified to exist at 13.4.6) — a backend ping test has no dependency on a Vite dev server, and Aspire
+  runs `npm install`, not `ci`, so the leak could mutate the lockfile invisibly in CI. Action-version
+  sweep across the whole repo is **one line**: `backend-cd.yml`'s `checkout@v4` → `@v7`.
 
 ## Not yet specified
 
-- **Keeping the vendored Bootstrap Darkly copy honest.** How the copied CSS stays in step
-  with the blog, and what would signal that it has drifted. Narrowed by
-  [Prototype the three subscription pages](issues/06-prototype-the-subscription-pages.md): the
-  header and footer are **not** vendored — they load live from `www.sixsideddice.com/js/`, so they
-  cannot drift. This is now about the CSS alone.
 - **Analytics.** Whether subscribe/confirm/dismiss feed the blog's existing Google Analytics
   tag, and whether that is wanted at all.
 
@@ -177,3 +195,8 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   [Name the reader's local subscription state](issues/01-name-the-readers-local-state.md):
   `http://sixsideddice.com` 301s to `www`, but `https://sixsideddice.com` fails TLS, and the backend's
   CORS allowlist includes that effectively-dead origin. Blog infrastructure, not this effort.
+- **Dependabot for GitHub Actions (and for npm/NuGet).** Offered while resolving
+  [Frontend CI and the build-env channel](issues/07-frontend-ci-and-build-env.md) as the durable answer
+  to keeping action pins current, and **declined** — the one-line sweep stands. Widening it to the npm
+  and NuGet ecosystems is a bigger call anyway, since NuGet is centrally pinned via
+  `Directory.Packages.props`; that belongs to its own effort with its own ADR.
