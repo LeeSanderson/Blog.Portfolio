@@ -14,6 +14,11 @@ and the scroll trigger needed one. Ticket 02 removed the scroll trigger — but 
 anchor rule that reads `offsetTop` on every heading and on the article body. **The layout dependency
 did not go away; it moved**, and the seam that was designed to contain it no longer sits in front of it.
 
+[What the widget does when there is no anchor](10-widget-with-no-anchor.md) has since narrowed what
+gets measured: the box is **`<main>`**, not `[data-pagefind-body]`, and the whole rule reads one
+container plus heading tags. The fallback branch to test is "no `h2`–`h6` in `<main>`", not "not an
+article" — that case no longer exists in the widget's code.
+
 Settle:
 
 - **Where the seam goes now.** The obvious candidate is a pure

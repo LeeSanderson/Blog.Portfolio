@@ -69,9 +69,13 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   they did not.
 - The same shape, in markup rather than styling, named while resolving
   [Prototype the article widget](issues/02-prototype-the-article-widget.md): the widget's anchor rule
-  reads BlogToHtml's `data-pagefind-body` wrapper and the article's heading markup to place itself.
-  A template change in `C:/Dev/Personal/Blog` can silently move the widget, or stop it appearing at
-  all, with no signal here and no test that would catch it.
+  reads BlogToHtml's markup to place itself, so a template change in `C:/Dev/Personal/Blog` can
+  silently move the widget, or stop it appearing at all, with no signal here and no test that would
+  catch it. **Halved by [What the widget does when there is no
+  anchor](issues/10-widget-with-no-anchor.md):** the rule read two containers and now reads one.
+  `data-pagefind-body` is out of the widget entirely — it was only ever the box being measured, and
+  `<main>` measures the same — so the surviving exposure is `<main>` (in `_Layout.cshtml`, unchanged
+  since the blog's Bootstrap 4 days) plus the heading markup.
 - The same shape again in the *build*, from
   [Vite build shape](issues/04-vite-build-shape.md): three ways to ship a widget that builds clean and
   is broken in the reader's browser — a missing `"type": "module"` renames it to `widget.mjs` and the
@@ -192,6 +196,17 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   the same id space, and a collision silently unlabels the input), and invalid input uses
   **`novalidate` through the same status region**, adding one row to ticket 02's copy table.
   `prefers-reduced-motion` confirmed as one branch.
+- [What the widget does when there is no anchor](issues/10-widget-with-no-anchor.md) — the question
+  **dissolves**: the contract line lives in `Article.cshtml`, so BlogToHtml decides article-ness at
+  generation time and the widget has no article test, no discriminator and no non-article branch. It
+  reads `<main>` and heading tags and nothing else — nearest `h2`–`h6` to `<main>`'s midpoint, never
+  `h1`, end of `<main>` when there are none — which **amends ticket 02's anchor rule** and takes
+  `data-pagefind-body` out of the widget entirely (`<main>`'s midpoint sits ~20px above it, so
+  placement is unchanged and ticket 02's measurements stand). Not two collapsed cases but one rule
+  with a fallback. **No `console.warn` and no guard**: a `<main>`-less page is unreachable for a
+  generated page, and `Games/` is Vite-built, not BlogToHtml-generated. One residue for the spec:
+  name the file as `Article.cshtml`, *not* `_Layout.cshtml`, where all eight existing script tags
+  live and a ninth would ship the widget to the two list pages.
 
 ## Not yet specified
 
@@ -221,6 +236,12 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   [Name the reader's local subscription state](issues/01-name-the-readers-local-state.md):
   `http://sixsideddice.com` 301s to `www`, but `https://sixsideddice.com` fails TLS, and the backend's
   CORS allowlist includes that effectively-dead origin. Blog infrastructure, not this effort.
+- **The widget on any surface but an article.** Ruled out while resolving [What the widget does when
+  there is no anchor](issues/10-widget-with-no-anchor.md), which had offered "a signup box on the blog
+  index is no bad thing" as a live option. `Blog/index.html`, `Blog/all.html`, `search.html`,
+  `404.html` and `Games/BuzzerBee/index.html` get nothing. Putting a signup box on a list page is a
+  surface decision with its own placement, copy and accessibility questions — none of it prototyped
+  here, and `/subscribe/` already exists for the reader who wants to sign up outside an article.
 - **Dependabot for GitHub Actions (and for npm/NuGet).** Offered while resolving
   [Frontend CI and the build-env channel](issues/07-frontend-ci-and-build-env.md) as the durable answer
   to keeping action pins current, and **declined** — the one-line sweep stands. Widening it to the npm
