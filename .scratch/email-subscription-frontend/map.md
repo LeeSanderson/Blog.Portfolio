@@ -45,7 +45,7 @@ constraints on every ticket, not open questions):
 | Local dev | An Aspire resource so `./run-local.ps1` runs the whole stack; `npm run dev` still works standalone. *The call is `AddViteApp` from `Aspire.Hosting.JavaScript` — `AddNpmApp`/`Aspire.Hosting.NodeJs` named here at charting do not exist at 13.4.6. And the resource does **not** fail to start in CI: Aspire 13 installs the dependencies instead, which is a quieter problem, not accepted noise — see [Aspire hosting for the Vite dev server](issues/05-aspire-vite-dev-server.md)* |
 | Local email | Real Resend sends, gated on verifying the sending domain |
 | API URL | Repo variable `API_BASE_URL` + a new generic `build-env` input on the reusable workflow; Vite bakes `VITE_API_BASE_URL`. *The `build-env` input was **dissolved, not designed**: with the app owning its own build there is no generic channel — the build step just sets `env: VITE_API_BASE_URL: ${{ vars.API_BASE_URL }}`. The variable holds the **full origin**, not the bare hostname — see [Frontend CI and the build-env channel](issues/07-frontend-ci-and-build-env.md)* |
-| Testing | Vitest + happy-dom, no browsers. *The scroll-trigger seam this row called for is moot — there is no scroll trigger; see [Prototype the article widget](issues/02-prototype-the-article-widget.md). The layout dependency moved to the anchor rule instead, and where the seam goes now is [Testing the anchor rule without a layout engine](issues/11-testing-the-anchor-rule.md)* |
+| Testing | Vitest + happy-dom, no browsers. *The scroll-trigger seam this row called for is moot — there is no scroll trigger; see [Prototype the article widget](issues/02-prototype-the-article-widget.md). The layout dependency moved to the anchor rule instead, and the seam is now a pure `indexNearestMidpoint(headingTops, articleBox)`; the rule is measured with **`getBoundingClientRect().top`, not `offsetTop`** (which amends the wording of tickets 02 and 10) and the widget mounts once on `window.load` — see [Testing the anchor rule without a layout engine](issues/11-testing-the-anchor-rule.md)* |
 | Styling | Light-DOM Lit following the `six-sided-*` precedent, inheriting Bootstrap Darkly; `bootstrapdarkly.min.css` + `site.css` vendored for the pages and local dev |
 | Blog contract | One `<script type="module">` line in the BlogToHtml post template; the widget self-injects |
 
@@ -75,7 +75,17 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   anchor](issues/10-widget-with-no-anchor.md):** the rule read two containers and now reads one.
   `data-pagefind-body` is out of the widget entirely — it was only ever the box being measured, and
   `<main>` measures the same — so the surviving exposure is `<main>` (in `_Layout.cshtml`, unchanged
-  since the blog's Bootstrap 4 days) plus the heading markup.
+  since the blog's Bootstrap 4 days) plus the heading markup. **Accepted with no automated signal by
+  [Testing the anchor rule without a layout engine](issues/11-testing-the-anchor-rule.md)**, which
+  weighed one and declined: ticket 10 already refused a runtime guard for a missing `<main>`, so a
+  test-time signal for the same case would be inconsistent, and a checksum — ticket 14's mechanism —
+  cannot see a live contract in another repo's output. The mitigation is documentation travelling to the
+  repo that can break it: the spec states the contract beside the script line. That statement gained a
+  **third** clause, and it is the sharpest version of this edge yet — *do not add `async`*. A
+  `<script type="module">` blocks the load event, so it always runs before `load`; add `async` to speed
+  the page up and the widget's load-mount never fires, so it silently never appears on **any** post.
+  One attribute, in another repo, and the whole feature is gone with nothing red here. That is why the
+  otherwise-unreachable `readyState === 'complete'` branch is kept and tested.
 - The same shape again in the *build*, from
   [Vite build shape](issues/04-vite-build-shape.md): three ways to ship a widget that builds clean and
   is broken in the reader's browser — a missing `"type": "module"` renames it to `widget.mjs` and the
@@ -104,6 +114,15 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   and our push — the `pages-deploy` concurrency group only serialises deploys from *this* repo. It fails
   **loudly** and leaves nothing half-broken, since the push either happened or it did not, which is why
   the chosen answer is to fail rather than rebase-and-retry, with `workflow_dispatch` as the retry.
+- ~~One in the *measurement*, found while resolving [Testing the anchor rule without a layout
+  engine](issues/11-testing-the-anchor-rule.md): `offsetTop` is measured from `offsetParent`, so
+  comparing `main.offsetTop` against a heading's only holds while both share one. Nothing in the article
+  path is positioned today (no `position: relative` in `site.css`, none on Bootstrap's `.container`), so
+  the rule is correct — and one `position: relative` on `.container`, `<main>` or `[data-pagefind-body]`
+  away from comparing two coordinate spaces with no error and no signal.~~ **Deleted, not accepted:** the
+  rule measures with `getBoundingClientRect().top`, which is viewport-relative, so `offsetParent` plays
+  no part at all. Recorded because it is the first member of this family the map removed rather than
+  documented, and it cost nothing to remove.
 
 ## Decisions so far
 
@@ -207,6 +226,23 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   generated page, and `Games/` is Vite-built, not BlogToHtml-generated. One residue for the spec:
   name the file as `Article.cshtml`, *not* `_Layout.cshtml`, where all eight existing script tags
   live and a ninth would ship the widget to the two list pages.
+- [Testing the anchor rule without a layout engine](issues/11-testing-the-anchor-rule.md) — the seam is a
+  pure **`indexNearestMidpoint(headingTops, articleBox) → index | null`** with the midpoint arithmetic
+  inside it and four lines of glue outside; ties go to the earliest heading. The rule is measured with
+  **`getBoundingClientRect().top`, which amends the `offsetTop` wording of tickets 02 and 10** and deletes
+  the `offsetParent` coupling outright. The widget **mounts once on `window.load`** (with a
+  `readyState === 'complete'` short-circuit), so there is no remeasure, no observer and no image
+  bookkeeping — the reflow-path question dissolves rather than being answered. Measured, not assumed: all
+  27 articles carry an unsized hero **inside `<main>`** above every heading, which shifts each heading's
+  distance from the midpoint by ~4.4pp against the 4.3pp median ticket 02 tuned to, so pre-load
+  measurement really does pick a different heading; and happy-dom's unstubbed rule **passes green while
+  choosing the first heading**, because all-zero layout ties every candidate. Six tests, none touching an
+  unstubbed layout read; the fixture stubs the `sr-only` `h1` at top `0` and expects the **third**
+  heading, so a selector bug and a dead stub both fail loudly instead of passing. `document.images`
+  (**`undefined`** in happy-dom) and `img.complete` (**`true` instantly**) are named as APIs the frontend
+  must not use. The browser-test trade **stands**; markup drift is **accepted with no signal**, mitigated
+  by a spec-documented contract whose third clause — *do not add `async`* — is what keeps the otherwise
+  unreachable `readyState` branch.
 
 ## Not yet specified
 
@@ -219,8 +255,26 @@ Edges named rather than buried — a running list, added to as tickets resolve. 
   is separate work in `C:/Dev/Personal/Blog`, not on this map.
 - **A custom `api.sixsideddice.com` domain.** Weighed at charting and rejected in favour of
   the repo variable — revisit only as its own effort, with the DNS and certificate work owned.
-- **Playwright, browser-mode or end-to-end tests.** Deliberately traded away; the scroll
-  trigger is made testable by a seam instead.
+- **Playwright, browser-mode or end-to-end tests.** Deliberately traded away at charting. *The
+  justification recorded here — "the scroll trigger is made testable by a seam instead" — was **wrong**
+  once ticket 02 deleted the scroll trigger. Re-examined on its merits by [Testing the anchor rule
+  without a layout engine](issues/11-testing-the-anchor-rule.md) and the trade **stands**, on a different
+  argument: a browser would test that Chromium computes `getBoundingClientRect` correctly, which was never
+  the risk. The reachable bugs are selector choice, arithmetic and BlogToHtml drift — and drift cannot be
+  caught in CI either way, because the published articles live in another repo, so a browser test would
+  still run against a fixture we wrote. It buys a real layout engine over our own fixture, for a browser
+  download in ticket 07's single linear job, a dev dependency and an ADR.*
+- **A hand-run measurement script over the real 27 articles.** The tool that produced ticket 02's
+  placement numbers. Offered as the middle path between happy-dom and a CI browser while resolving
+  [Testing the anchor rule without a layout engine](issues/11-testing-the-anchor-rule.md), and
+  **declined** — it is a drift signal, and markup drift was accepted with no signal in the same session.
+- **Giving the blog's images intrinsic dimensions.** Measured while resolving [Testing the anchor rule
+  without a layout engine](issues/11-testing-the-anchor-rule.md): 0 of 33 images across the 27 articles
+  declare `width`/`height`, and `.hero-image` is `max-width: 100%` with no height or `aspect-ratio`, so
+  every article shifts layout on load. Adding dimensions in BlogToHtml would fix the blog's CLS and make
+  the anchor measurement stable at `DOMContentLoaded`. Out of scope on two counts: it is an edit in
+  `C:/Dev/Personal/Blog`, and the load-mount is correct with or without it — so it is an improvement to
+  the blog, never a dependency of this map.
 - **A server-side "am I subscribed?" endpoint.** It would be an email-enumeration oracle and
   would undo the anti-enumeration design the backend spec chose on purpose.
 - **A re-subscribe affordance on the unsubscribe page.** Re-asks someone who just opted out.
